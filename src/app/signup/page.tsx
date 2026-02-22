@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Eye, EyeOff } from "lucide-react";
 import { createBrowserClient } from "@/lib/supabase";
 import {
   Card,
@@ -17,16 +19,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const signupSchema = z.object({
-  full_name: z.string().min(1, "Full name is required"),
-  email: z.string().email("Enter a valid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
+const PASSWORD_REQUIREMENTS =
+  "Password must be at least 8 characters and include one lowercase letter, one uppercase letter, one number, and one special character (e.g. !@#$%).";
+
+const signupSchema = z
+  .object({
+    full_name: z.string().min(1, "Full name is required"),
+    email: z.string().email("Enter a valid email"),
+    password: z
+      .string()
+      .min(8, PASSWORD_REQUIREMENTS)
+      .refine(
+        (p) => /[a-z]/.test(p),
+        PASSWORD_REQUIREMENTS
+      )
+      .refine(
+        (p) => /[A-Z]/.test(p),
+        PASSWORD_REQUIREMENTS
+      )
+      .refine(
+        (p) => /[0-9]/.test(p),
+        PASSWORD_REQUIREMENTS
+      )
+      .refine(
+        (p) => /[!@#$%^&*()_+\-=[\]{};':"|<>?,./`~]/.test(p),
+        PASSWORD_REQUIREMENTS
+      ),
+  });
 
 type SignupForm = z.infer<typeof signupSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -132,14 +157,31 @@ export default function SignupPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="At least 8 characters"
-                  aria-invalid={!!errors.password}
-                  {...register("password")}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    placeholder="8+ chars, mixed case, number, symbol"
+                    className="pr-9"
+                    aria-invalid={!!errors.password}
+                    {...register("password")}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPassword((p) => !p)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </Button>
+                </div>
                 {errors.password && (
                   <p className="text-sm text-destructive">
                     {errors.password.message}
