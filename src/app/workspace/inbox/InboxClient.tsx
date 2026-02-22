@@ -65,7 +65,28 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
 
         // Set triage result to display in TriageCard
         if (data.triage) {
-          setTriageResult(data.triage);
+          // Defensively normalize actionItems before setting triage result
+          const triage = { ...data.triage };
+          
+          if (triage.actionItems !== undefined) {
+            if (!Array.isArray(triage.actionItems)) {
+              // If it's a string, try splitting on commas
+              if (typeof triage.actionItems === "string") {
+                triage.actionItems = triage.actionItems
+                  .split(",")
+                  .map((item: string) => item.trim())
+                  .filter((item: string) => item !== "");
+              } else if (triage.actionItems !== null && triage.actionItems !== undefined) {
+                // If it's a single non-array value, wrap it in an array
+                triage.actionItems = [String(triage.actionItems)];
+              } else {
+                // Otherwise, replace with empty array
+                triage.actionItems = [];
+              }
+            }
+          }
+          
+          setTriageResult(triage);
         }
 
         // Refresh history from Supabase

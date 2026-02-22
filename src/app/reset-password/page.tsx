@@ -71,27 +71,67 @@ export default function ResetPasswordPage() {
     async function checkSession() {
       const supabase = createBrowserClient();
       
-      // Supabase automatically processes hash fragments when getSession() is called
-      // If there's a valid recovery token in the hash, it will create a session
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      // Check if there's a hash in the URL (password reset links contain hash fragments)
-      const hasHash = window.location.hash.length > 0;
+      // Extract token from URL hash (Supabase password reset links contain access_token in hash)
+      const hash = window.location.hash;
+      const hashParams = new URLSearchParams(hash.substring(1)); // Remove '#'
+      const accessToken = hashParams.get("access_token");
+      const type = hashParams.get("type");
       
-      if (hasHash && session) {
-        // Valid recovery session
-        setIsValidToken(true);
-      } else if (hasHash && !session) {
-        // Hash present but no session - might be processing, wait a bit
-        setTimeout(async () => {
-          const { data: { session: retrySession } } = await supabase.auth.getSession();
-          setIsValidToken(!!retrySession);
-        }, 500);
-      } else {
-        // No hash means invalid or expired link
+      if (!accessToken || hash.length === 0 || type !== "recovery") {
+        // No hash or wrong type means invalid or expired link
         setIsValidToken(false);
+        return;
+      }
+
+      // Subscribe to auth state changes to reliably detect the new session
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((event, session) => {
+        if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
+          setIsValidToken(true);
+          subscription.unsubscribe();
+        }
+      });
+
+      // Perform proper recovery token exchange
+      // Extract token_hash from the hash if available, otherwise use access_token
+      try {
+        const tokenHash = hashParams.get("token_hash") || accessToken;
+        
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          type: "recovery",
+          token_hash: tokenHash,
+        });
+
+        if (verifyError) {
+          // If verifyOtp fails, Supabase client automatically processes hash fragments when getSession is called
+          // This is a fallback for cases where the token format differs
+          const {
+            data: { session: currentSession },
+          } = await supabase.auth.getSession();
+          
+          if (currentSession) {
+            setIsValidToken(true);
+            subscription.unsubscribe();
+          } else {
+            setIsValidToken(false);
+            subscription.unsubscribe();
+          }
+          return;
+        }
+
+        // verifyOtp succeeded, check for session
+        const {
+          data: { session: currentSession },
+        } = await supabase.auth.getSession();
+        
+        if (currentSession) {
+          setIsValidToken(true);
+          subscription.unsubscribe();
+        }
+      } catch (err) {
+        setIsValidToken(false);
+        subscription.unsubscribe();
       }
     }
 
