@@ -4,6 +4,15 @@ const TEXT_COLOR = "#18181b";
 const TEXT_MUTED = "#71717a";
 const BORDER_COLOR = "#e4e4e7";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function layout(content: string) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -62,11 +71,12 @@ function layout(content: string) {
 }
 
 function ctaButton(text: string, href: string) {
+  const safeHref = escapeHtml(encodeURI(href));
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0;">
   <tr>
     <td align="center">
-      <a href="${href}" target="_blank" style="display:inline-block;background-color:${BRAND_COLOR};color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:12px 32px;border-radius:8px;line-height:1.4;">
-        ${text}
+      <a href="${safeHref}" target="_blank" style="display:inline-block;background-color:${BRAND_COLOR};color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:12px 32px;border-radius:8px;line-height:1.4;">
+        ${escapeHtml(text)}
       </a>
     </td>
   </tr>
@@ -74,9 +84,10 @@ function ctaButton(text: string, href: string) {
 }
 
 export function confirmationEmail(name: string, confirmUrl: string) {
+  const safeName = escapeHtml(name);
   return layout(`
     <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:${TEXT_COLOR};line-height:1.3;">
-      Welcome to FlowDesk${name ? `, ${name}` : ""}!
+      Welcome to FlowDesk${safeName ? `, ${safeName}` : ""}!
     </h1>
     <p style="margin:0 0 4px;font-size:15px;color:${TEXT_MUTED};line-height:1.6;">
       You&rsquo;re one step away from reclaiming your time.
@@ -94,7 +105,7 @@ export function magicLinkEmail(email: string, magicLinkUrl: string) {
       Sign in to FlowDesk
     </h1>
     <p style="margin:0;font-size:15px;color:${TEXT_COLOR};line-height:1.6;">
-      Click the button below to sign in as <strong>${email}</strong>. This link expires in 10 minutes.
+      Click the button below to sign in as <strong>${escapeHtml(email)}</strong>. This link expires in 10 minutes.
     </p>
     ${ctaButton("Sign In", magicLinkUrl)}
   `);
@@ -118,7 +129,7 @@ export function emailChangeEmail(newEmail: string, confirmUrl: string) {
       Confirm your new email
     </h1>
     <p style="margin:0;font-size:15px;color:${TEXT_COLOR};line-height:1.6;">
-      Please confirm that you&rsquo;d like to change your FlowDesk email to <strong>${newEmail}</strong>.
+      Please confirm that you&rsquo;d like to change your FlowDesk email to <strong>${escapeHtml(newEmail)}</strong>.
     </p>
     ${ctaButton("Confirm New Email", confirmUrl)}
   `);
@@ -130,7 +141,7 @@ export function inviteEmail(inviterName: string, inviteUrl: string) {
       You&rsquo;ve been invited to FlowDesk
     </h1>
     <p style="margin:0;font-size:15px;color:${TEXT_COLOR};line-height:1.6;">
-      ${inviterName ? `<strong>${inviterName}</strong> invited you` : "You&rsquo;ve been invited"} to join FlowDesk. Click below to accept and create your account.
+      ${inviterName ? `<strong>${escapeHtml(inviterName)}</strong> invited you` : "You&rsquo;ve been invited"} to join FlowDesk. Click below to accept and create your account.
     </p>
     ${ctaButton("Accept Invitation", inviteUrl)}
   `);

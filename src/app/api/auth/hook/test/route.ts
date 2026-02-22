@@ -11,14 +11,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Not available" }, { status: 404 });
   }
 
-  const { email, name } = await req.json();
+  let body: { email?: string; name?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const { email, name } = body;
   if (!email) {
     return NextResponse.json({ error: "email is required" }, { status: 400 });
   }
 
+  const baseUrl = (
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  ).replace(/\/$/, "");
+
   const html = confirmationEmail(
     name ?? "Test User",
-    "https://flow-desk-iota.vercel.app/workspace"
+    `${baseUrl}/workspace`
   );
 
   const { data, error } = await resend.emails.send({

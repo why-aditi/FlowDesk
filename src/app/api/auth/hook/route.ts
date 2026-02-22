@@ -80,7 +80,7 @@ function resolveSubjectAndHtml(payload: HookPayload, confirmUrl: string) {
     case "email_change":
       return {
         subject: "Confirm your new email address",
-        html: emailChangeEmail(email, confirmUrl),
+        html: emailChangeEmail(payload.user.email_new ?? email, confirmUrl),
       };
     case "invite":
       return {
@@ -103,9 +103,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  let secret = hookSecret;
+  if (secret.startsWith("v1,whsec_")) {
+    secret = secret.slice("v1,whsec_".length);
+  } else if (secret.startsWith("whsec_")) {
+    secret = secret.slice("whsec_".length);
+  }
+
+  if (!/^[A-Za-z0-9+/=]+$/.test(secret)) {
+    return NextResponse.json(
+      { error: "SEND_EMAIL_HOOK_SECRET is not valid base64" },
+      { status: 500 }
+    );
+  }
+
   const payload = await req.text();
   const headers = Object.fromEntries(req.headers);
-  const wh = new Webhook(hookSecret.replace("v1,whsec_", ""));
+  const wh = new Webhook(secret);
 
   let data: HookPayload;
   try {
