@@ -4,21 +4,24 @@ import { cookies } from "next/headers";
 
 const _supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const _supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-if (!_supabaseUrl?.trim()) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+
+function getSupabaseEnv(): { url: string; anonKey: string } {
+  if (!_supabaseUrl?.trim()) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+  }
+  if (!_supabaseAnonKey?.trim()) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  }
+  return { url: _supabaseUrl, anonKey: _supabaseAnonKey };
 }
-if (!_supabaseAnonKey?.trim()) {
-  throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
-}
-const supabaseUrl: string = _supabaseUrl;
-const supabaseAnonKey: string = _supabaseAnonKey;
 
 /**
  * Creates a Supabase client for use in the browser (Client Components).
  * Uses NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.
  */
 export function createBrowserClient() {
-  return createBrowserClientSSR(supabaseUrl, supabaseAnonKey);
+  const { url, anonKey } = getSupabaseEnv();
+  return createBrowserClientSSR(url, anonKey);
 }
 
 /**
@@ -26,9 +29,10 @@ export function createBrowserClient() {
  * Uses cookies from next/headers for auth. Call in an async context.
  */
 export async function createServerClient() {
+  const { url, anonKey } = getSupabaseEnv();
   const cookieStore = await cookies();
 
-  return createServerClientSSR(supabaseUrl, supabaseAnonKey, {
+  return createServerClientSSR(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
