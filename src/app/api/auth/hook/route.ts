@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "standardwebhooks";
-import { getResend } from "@/lib/resend";
+import { sendEmail } from "@/lib/mailer";
 import {
   confirmationEmail,
   magicLinkEmail,
@@ -8,9 +8,6 @@ import {
   emailChangeEmail,
   inviteEmail,
 } from "@/lib/email-templates";
-
-const SEND_FROM =
-  process.env.RESEND_FROM_EMAIL ?? "FlowDesk <onboarding@resend.dev>";
 
 const hookSecret = process.env.SEND_EMAIL_HOOK_SECRET;
 
@@ -141,15 +138,10 @@ export async function POST(req: NextRequest) {
 
   const { subject, html } = resolveSubjectAndHtml(data, confirmUrl);
 
-  const { error } = await getResend().emails.send({
-    from: SEND_FROM,
-    to: user.email,
-    subject,
-    html,
-  });
-
-  if (error) {
-    console.error("Resend error:", error);
+  try {
+    await sendEmail({ to: user.email, subject, html });
+  } catch (err) {
+    console.error("SMTP error:", err);
     return NextResponse.json(
       { error: { http_code: 500, message: "Failed to send email" } },
       { status: 500 }
