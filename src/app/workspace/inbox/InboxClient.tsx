@@ -167,13 +167,13 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
                         {new Date(note.created_at).toLocaleDateString()}
                       </span>
                     </div>
-                    {note.metadata?.category && typeof note.metadata.category === "string" && (
+                    {note.metadata?.category && typeof note.metadata.category === "string" ? (
                       <div>
                         <Badge variant="secondary" className="text-xs">
-                          {note.metadata.category}
+                          {note.metadata.category as string}
                         </Badge>
                       </div>
-                    )}
+                    ) : null}
                   </li>
                 ))}
               </ul>
