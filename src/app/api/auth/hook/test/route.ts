@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getResend } from "@/lib/resend";
+import { sendEmail } from "@/lib/mailer";
 import { confirmationEmail } from "@/lib/email-templates";
 
 /**
@@ -32,16 +32,18 @@ export async function POST(req: NextRequest) {
     `${baseUrl}/workspace`
   );
 
-  const { data, error } = await getResend().emails.send({
-    from: process.env.RESEND_FROM_EMAIL ?? "FlowDesk <onboarding@resend.dev>",
-    to: email,
-    subject: "Confirm your FlowDesk account (TEST)",
-    html,
-  });
-
-  if (error) {
-    return NextResponse.json({ error }, { status: 500 });
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Confirm your FlowDesk account (TEST)",
+      html,
+    });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to send" },
+      { status: 500 }
+    );
   }
 
-  return NextResponse.json({ ok: true, id: data?.id });
+  return NextResponse.json({ ok: true });
 }
