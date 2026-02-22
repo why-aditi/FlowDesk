@@ -2,8 +2,16 @@ import { createBrowserClient as createBrowserClientSSR } from "@supabase/ssr";
 import { createServerClient as createServerClientSSR } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const _supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const _supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+if (!_supabaseUrl?.trim()) {
+  throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+}
+if (!_supabaseAnonKey?.trim()) {
+  throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
+}
+const supabaseUrl: string = _supabaseUrl;
+const supabaseAnonKey: string = _supabaseAnonKey;
 
 /**
  * Creates a Supabase client for use in the browser (Client Components).
