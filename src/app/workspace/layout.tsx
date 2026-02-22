@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase-server";
 import { WorkspaceShell } from "@/components/workspace/WorkspaceShell";
 
+export const dynamic = "force-dynamic";
+
 export default async function WorkspaceLayout({
   children,
 }: {

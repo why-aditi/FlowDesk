@@ -21,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
@@ -32,7 +33,6 @@ const NAV_ITEMS: { tab: WorkspaceTab; label: string; href: string; icon: React.C
   { tab: "meetings", label: "Meetings", href: "/workspace/meetings", icon: Calendar },
   { tab: "tasks", label: "Tasks", href: "/workspace/tasks", icon: CheckSquare },
   { tab: "teams", label: "Teams", href: "/workspace/teams", icon: Users },
-  { tab: "settings", label: "Settings", href: "/workspace/settings", icon: Settings },
 ];
 
 function pathnameToTab(pathname: string): WorkspaceTab {
@@ -106,6 +106,17 @@ export function Sidebar() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-56">
+            <DropdownMenuItem asChild>
+              <Link
+                href="/workspace/settings"
+                onClick={() => setActiveTab("settings")}
+                className="flex cursor-pointer items-center"
+              >
+                <Settings className="mr-2 size-4" />
+                Settings
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>
               <LogOut className="mr-2 size-4" />
               Sign out
