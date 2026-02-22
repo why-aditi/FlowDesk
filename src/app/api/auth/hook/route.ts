@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "standardwebhooks";
-import { resend } from "@/lib/resend";
+import { getResend } from "@/lib/resend";
 import {
   confirmationEmail,
   magicLinkEmail,
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
 
   const { subject, html } = resolveSubjectAndHtml(data, confirmUrl);
 
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: SEND_FROM,
     to: user.email,
     subject,

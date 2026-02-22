@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resend } from "@/lib/resend";
+import { getResend } from "@/lib/resend";
 import { confirmationEmail } from "@/lib/email-templates";
 
 /**
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     `${baseUrl}/workspace`
   );
 
-  const { data, error } = await resend.emails.send({
+  const { data, error } = await getResend().emails.send({
     from: process.env.RESEND_FROM_EMAIL ?? "FlowDesk <onboarding@resend.dev>",
     to: email,
     subject: "Confirm your FlowDesk account (TEST)",
