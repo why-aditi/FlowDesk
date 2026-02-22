@@ -34,9 +34,9 @@ export default function Home() {
             >
               Login
             </Link>
-            <Link href="/signup">
-              <Button size="sm">Sign Up</Button>
-            </Link>
+            <Button asChild size="sm">
+              <Link href="/signup">Sign Up</Link>
+            </Button>
           </nav>
         </div>
       </header>
@@ -52,11 +52,9 @@ export default function Home() {
             each other. You become the integration layer. We fix that.
           </p>
           <div className="mt-10">
-            <Link href="/signup">
-              <Button size="lg" className="text-base px-8">
-                Get Started Free
-              </Button>
-            </Link>
+            <Button asChild size="lg" className="text-base px-8">
+              <Link href="/signup">Get Started Free</Link>
+            </Button>
           </div>
         </section>
 
@@ -78,11 +76,9 @@ export default function Home() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-0 mt-auto">
-                <Link href="/workspace/inbox">
-                  <Button variant="outline" size="sm">
-                    Try Smart Inbox
-                  </Button>
-                </Link>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/workspace/inbox">Try Smart Inbox</Link>
+                </Button>
               </CardContent>
             </Card>
             <Card className="flex flex-col">
@@ -95,11 +91,9 @@ export default function Home() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-0 mt-auto">
-                <Link href="/workspace/research">
-                  <Button variant="outline" size="sm">
-                    Try Research Copilot
-                  </Button>
-                </Link>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/workspace/research">Try Research Copilot</Link>
+                </Button>
               </CardContent>
             </Card>
             <Card className="flex flex-col">
@@ -112,11 +106,9 @@ export default function Home() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-0 mt-auto">
-                <Link href="/workspace/meetings">
-                  <Button variant="outline" size="sm">
-                    Try Meeting Summarizer
-                  </Button>
-                </Link>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/workspace/meetings">Try Meeting Summarizer</Link>
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -196,6 +188,18 @@ export default function Home() {
             </Table>
           </div>
         </section>
+
+        <section
+          id="pricing"
+          className="max-w-6xl mx-auto px-4 py-16 md:py-20"
+        >
+          <h2 className="text-2xl md:text-3xl font-semibold text-center text-foreground mb-12">
+            Pricing
+          </h2>
+          <p className="text-center text-muted-foreground max-w-2xl mx-auto">
+            FlowDesk is free to get started. Upgrade when you need more power.
+          </p>
+        </section>
       </main>
 
       <footer className="border-t border-border mt-auto">
@@ -219,11 +223,9 @@ export default function Home() {
             >
               Login
             </Link>
-            <Link href="/signup">
-              <Button variant="outline" size="sm">
-                Sign Up
-              </Button>
-            </Link>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/signup">Sign Up</Link>
+            </Button>
           </nav>
           <p className="text-sm text-muted-foreground">FlowDesk</p>
         </div>

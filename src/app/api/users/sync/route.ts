@@ -4,20 +4,20 @@ import { createServerClient } from "@/lib/supabase-server";
 export async function POST() {
   const supabase = await createServerClient();
   const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-  if (sessionError || !session?.user) {
+  if (userError || !user) {
     return NextResponse.json(
       { error: "Unauthorized" },
       { status: 401 }
     );
   }
 
-  const { id, email } = session.user;
+  const { id, email } = user;
   const full_name =
-    (session.user.user_metadata?.full_name as string) ?? "";
+    (user.user_metadata?.full_name as string) ?? "";
 
   const { error: upsertError } = await supabase.from("users").upsert(
     {

@@ -55,11 +55,27 @@ export default function LoginPage() {
       return;
     }
 
-    await fetch("/api/users/sync", {
-      method: "POST",
-      credentials: "include",
-    });
-    router.push("/workspace");
+    try {
+      const syncRes = await fetch("/api/users/sync", {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!syncRes.ok) {
+        const text = await syncRes.text();
+        setError("root", {
+          message:
+            syncRes.status === 401
+              ? "Session expired. Please try again."
+              : text || "Could not sync your account. Please try again.",
+        });
+        return;
+      }
+      router.push("/workspace");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Network error. Please try again.";
+      setError("root", { message });
+    }
   }
 
   return (
