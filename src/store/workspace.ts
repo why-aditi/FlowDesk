@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 export type WorkspaceTab =
+  | "home"
   | "inbox"
   | "research"
   | "meetings"
@@ -22,7 +23,7 @@ interface WorkspaceState {
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
-  activeTab: "inbox",
+  activeTab: "home",
   user: null,
   setActiveTab: (tab) => set({ activeTab: tab }),
   setUser: (user) => set({ user }),
