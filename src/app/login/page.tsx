@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,7 +28,9 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const {
     register,
     handleSubmit,
@@ -37,6 +39,14 @@ export default function LoginPage() {
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
+
+  useEffect(() => {
+    if (searchParams.get("reset") === "success") {
+      setShowSuccessMessage(true);
+      // Clear the query parameter from URL
+      router.replace("/login", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   async function onSubmit(values: LoginForm) {
     const supabase = createBrowserClient();
@@ -99,6 +109,11 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {showSuccessMessage && (
+                <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-3" role="alert">
+                  Password reset successful! You can now log in with your new password.
+                </p>
+              )}
               {errors.root && (
                 <p className="text-sm text-destructive" role="alert">
                   {errors.root.message}
@@ -152,6 +167,14 @@ export default function LoginPage() {
                     {errors.password.message}
                   </p>
                 )}
+              </div>
+              <div className="flex items-center justify-end">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-foreground hover:underline"
+                >
+                  Forgot password?
+                </Link>
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Signing in…" : "Log in"}
