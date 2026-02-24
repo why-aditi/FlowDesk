@@ -35,17 +35,16 @@ async function getTeamData(slug: string, userId: string) {
     .eq("team_id", team.id);
 
   const members =
-    membersData?.map((m) => ({
-      id: (m.users as { id: string; email: string; full_name?: string })
-        .id,
-      email: (m.users as { id: string; email: string; full_name?: string })
-        .email,
-      full_name: (m.users as {
-        id: string;
-        email: string;
-        full_name?: string;
-      }).full_name,
-    })) || [];
+    membersData?.map((m) => {
+      const user = Array.isArray(m.users)
+        ? (m.users as { id: string; email: string; full_name?: string }[])[0]
+        : (m.users as { id: string; email: string; full_name?: string });
+      return {
+        id: user.id,
+        email: user.email,
+        full_name: user.full_name,
+      };
+    }) || [];
 
   // Fetch knowledge entries
   const { data: knowledgeEntries } = await supabase
@@ -57,14 +56,19 @@ async function getTeamData(slug: string, userId: string) {
     .order("created_at", { ascending: false });
 
   const entries =
-    knowledgeEntries?.map((entry) => ({
-      id: entry.id,
-      question: entry.question,
-      answer: entry.answer,
-      source_note_id: entry.source_note_id,
-      source_note_title: (entry.notes as { title?: string })?.title,
-      created_at: entry.created_at,
-    })) || [];
+    knowledgeEntries?.map((entry) => {
+      const note = Array.isArray(entry.notes)
+        ? (entry.notes as { title?: string }[])[0]
+        : (entry.notes as { title?: string } | null);
+      return {
+        id: entry.id,
+        question: entry.question,
+        answer: entry.answer,
+        source_note_id: entry.source_note_id,
+        source_note_title: note?.title,
+        created_at: entry.created_at,
+      };
+    }) || [];
 
   // Fetch user's notes for the picker
   const { data: userNotes } = await supabase
