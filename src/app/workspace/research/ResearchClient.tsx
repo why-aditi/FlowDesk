@@ -136,12 +136,12 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
 
       // Update the outline with the new draft paragraph
       if (data.paragraph && outline) {
-        const updatedOutline = { ...outline };
-        updatedOutline.sections[sectionIndex] = {
+        const newSections = [...outline.sections];
+        newSections[sectionIndex] = {
           ...section,
           draft_paragraph: data.paragraph,
         };
-        setOutline(updatedOutline);
+        setOutline({ ...outline, sections: newSections });
         toast.success("Paragraph generated!");
       }
     } catch (err) {
