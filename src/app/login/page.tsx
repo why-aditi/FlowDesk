@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,18 +27,8 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginContent />
-    </Suspense>
-  );
-}
-
-function LoginContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
-  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const {
     register,
     handleSubmit,
@@ -47,14 +37,6 @@ function LoginContent() {
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
-
-  useEffect(() => {
-    if (searchParams.get("reset") === "success") {
-      setShowSuccessMessage(true);
-      // Clear the query parameter from URL
-      router.replace("/login", { scroll: false });
-    }
-  }, [searchParams, router]);
 
   async function onSubmit(values: LoginForm) {
     const supabase = createBrowserClient();
@@ -109,19 +91,14 @@ function LoginContent() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
+      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl">Log in to your account</CardTitle>
-            <CardDescription>Welcome back.</CardDescription>
+            <CardTitle className="text-xl sm:text-2xl">Log in to your account</CardTitle>
+            <CardDescription className="text-sm sm:text-base">Welcome back.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              {showSuccessMessage && (
-                <p className="text-sm text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-3" role="alert">
-                  Password reset successful! You can now log in with your new password.
-                </p>
-              )}
               {errors.root && (
                 <p className="text-sm text-destructive" role="alert">
                   {errors.root.message}
@@ -175,14 +152,6 @@ function LoginContent() {
                     {errors.password.message}
                   </p>
                 )}
-              </div>
-              <div className="flex items-center justify-end">
-                <Link
-                  href="/forgot-password"
-                  className="text-sm font-medium text-foreground hover:underline"
-                >
-                  Forgot password?
-                </Link>
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Signing in…" : "Log in"}

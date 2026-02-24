@@ -40,23 +40,6 @@ function validateTriageResponse(parsed: unknown): TriageResponse {
     throw new Error("Response must have a non-empty 'summary' field");
   }
 
-  // Validate priority if present
-  if (obj.priority !== undefined) {
-    if (typeof obj.priority !== "string" || !["high", "medium", "low"].includes(obj.priority)) {
-      throw new Error("Priority must be one of: 'high', 'medium', or 'low'");
-    }
-  }
-
-  // Validate actionItems if present
-  if (obj.actionItems !== undefined) {
-    if (!Array.isArray(obj.actionItems)) {
-      throw new Error("actionItems must be an array");
-    }
-    if (!obj.actionItems.every((item: unknown) => typeof item === "string" && item.trim() !== "")) {
-      throw new Error("actionItems must be an array of non-empty strings");
-    }
-  }
-
   return parsed as TriageResponse;
 }
 
@@ -69,20 +52,6 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Missing or empty 'message' field in request body" },
         { status: 400 }
-      );
-    }
-
-    // Authenticate user before consuming AI quota
-    const supabase = await createServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
       );
     }
 
@@ -100,6 +69,20 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: `AI processing failed: ${errorMessage}` },
         { status: 500 }
+      );
+    }
+
+    // Get authenticated user
+    const supabase = await createServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
 

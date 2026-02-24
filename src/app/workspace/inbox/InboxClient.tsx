@@ -65,28 +65,7 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
 
         // Set triage result to display in TriageCard
         if (data.triage) {
-          // Defensively normalize actionItems before setting triage result
-          const triage = { ...data.triage };
-          
-          if (triage.actionItems !== undefined) {
-            if (!Array.isArray(triage.actionItems)) {
-              // If it's a string, try splitting on commas
-              if (typeof triage.actionItems === "string") {
-                triage.actionItems = triage.actionItems
-                  .split(",")
-                  .map((item: string) => item.trim())
-                  .filter((item: string) => item !== "");
-              } else if (triage.actionItems !== null && triage.actionItems !== undefined) {
-                // If it's a single non-array value, wrap it in an array
-                triage.actionItems = [String(triage.actionItems)];
-              } else {
-                // Otherwise, replace with empty array
-                triage.actionItems = [];
-              }
-            }
-          }
-          
-          setTriageResult(triage);
+          setTriageResult(data.triage);
         }
 
         // Refresh history from Supabase
@@ -118,12 +97,12 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
   }
 
   return (
-    <div className="p-6 h-full flex gap-6">
+    <div className="p-4 sm:p-6 h-full flex flex-col lg:flex-row gap-4 lg:gap-6">
       {/* Left side: Input area */}
-      <div className="flex-1 flex flex-col gap-4">
+      <div className="flex-1 flex flex-col gap-4 min-w-0">
         <div>
-          <h1 className="text-2xl font-semibold">Smart Inbox</h1>
-          <p className="mt-2 text-muted-foreground">
+          <h1 className="text-xl sm:text-2xl font-semibold">Smart Inbox</h1>
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground">
             Paste any email, message, or notification to triage with AI.
           </p>
         </div>
@@ -133,7 +112,7 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
             placeholder="Paste any email, message or notification here..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="flex-1 min-h-[300px]"
+            className="flex-1 min-h-[200px] sm:min-h-[300px] resize-none"
             disabled={isPending}
           />
 
@@ -163,10 +142,10 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
       </div>
 
       {/* Right side: History */}
-      <div className="w-80 flex-shrink-0">
-        <Card className="h-full flex flex-col">
+      <div className="w-full lg:w-80 flex-shrink-0">
+        <Card className="h-full flex flex-col min-h-[300px] lg:min-h-0">
           <CardHeader>
-            <CardTitle>Inbox History</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">Inbox History</CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto">
             {history.length === 0 ? (
@@ -181,20 +160,20 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
                     className="rounded-md border border-border p-3 text-sm space-y-2"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-foreground line-clamp-3 flex-1">
+                      <p className="text-foreground line-clamp-3 flex-1 text-xs sm:text-sm">
                         {note.summary}
                       </p>
-                      <span className="text-muted-foreground text-xs shrink-0">
+                      <span className="text-muted-foreground text-xs shrink-0 whitespace-nowrap ml-2">
                         {new Date(note.created_at).toLocaleDateString()}
                       </span>
                     </div>
-                    {note.metadata?.category && typeof note.metadata.category === "string" ? (
+                    {note.metadata?.category && typeof note.metadata.category === "string" && (
                       <div>
                         <Badge variant="secondary" className="text-xs">
-                          {note.metadata.category as string}
+                          {note.metadata.category}
                         </Badge>
                       </div>
-                    ) : null}
+                    )}
                   </li>
                 ))}
               </ul>

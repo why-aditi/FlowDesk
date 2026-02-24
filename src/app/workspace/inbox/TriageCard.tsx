@@ -32,19 +32,7 @@ function getPriorityColor(priority?: "high" | "medium" | "low") {
 function formatDeadline(deadline: string | null | undefined): string | null {
   if (!deadline) return null;
   try {
-    // Detect date-only strings (e.g., "2024-01-15") and append "T00:00:00" to force local-midnight parsing
-    let dateString = deadline;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(deadline)) {
-      dateString = `${deadline}T00:00:00`;
-    }
-    
-    const date = new Date(dateString);
-    
-    // Validate the date
-    if (isNaN(date.getTime())) {
-      return null;
-    }
-    
+    const date = new Date(deadline);
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",

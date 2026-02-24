@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -12,6 +12,7 @@ import {
   Users,
   Settings,
   LogOut,
+  Menu,
 } from "lucide-react";
 import { useWorkspaceStore, type WorkspaceTab } from "@/store/workspace";
 import { createBrowserClient } from "@/lib/supabase";
@@ -25,6 +26,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
 const NAV_ITEMS: { tab: WorkspaceTab; label: string; href: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { tab: "home", label: "Home", href: "/workspace", icon: Home },
@@ -46,7 +53,7 @@ function pathnameToTab(pathname: string): WorkspaceTab {
   return "home";
 }
 
-export function Sidebar() {
+function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { activeTab, setActiveTab, user } = useWorkspaceStore();
@@ -65,8 +72,13 @@ export function Sidebar() {
   const displayName = user?.full_name?.trim() || user?.email || "User";
   const fallbackLetter = (user?.full_name?.[0] || user?.email?.[0] || "?").toUpperCase();
 
+  const handleNavClick = (tab: WorkspaceTab) => {
+    setActiveTab(tab);
+    onLinkClick?.();
+  };
+
   return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-background">
+    <>
       <nav className="flex flex-1 flex-col gap-1 p-3">
         {NAV_ITEMS.map(({ tab, label, href, icon: Icon }) => {
           const isActive = activeTab === tab;
@@ -74,7 +86,7 @@ export function Sidebar() {
             <Link
               key={tab}
               href={href}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleNavClick(tab)}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                 isActive
@@ -109,7 +121,10 @@ export function Sidebar() {
             <DropdownMenuItem asChild>
               <Link
                 href="/workspace/settings"
-                onClick={() => setActiveTab("settings")}
+                onClick={() => {
+                  handleNavClick("settings");
+                  onLinkClick?.();
+                }}
                 className="flex cursor-pointer items-center"
               >
                 <Settings className="mr-2 size-4" />
@@ -124,6 +139,38 @@ export function Sidebar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export function Sidebar() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-60 shrink-0 flex-col border-r border-border bg-background">
+        <SidebarContent />
+      </aside>
+
+      {/* Mobile Menu Button */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden fixed top-4 left-4 z-40"
+            aria-label="Open menu"
+          >
+            <Menu className="size-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-60 p-0">
+          <aside className="flex h-full w-full flex-col border-r border-border bg-background">
+            <SidebarContent onLinkClick={() => setMobileMenuOpen(false)} />
+          </aside>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
