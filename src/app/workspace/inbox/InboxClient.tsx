@@ -154,28 +154,33 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
               </p>
             ) : (
               <ul className="space-y-3">
-                {history.map((note) => (
-                  <li
-                    key={note.id}
-                    className="rounded-md border border-border p-3 text-sm space-y-2"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-foreground line-clamp-3 flex-1 text-xs sm:text-sm">
-                        {note.summary}
-                      </p>
-                      <span className="text-muted-foreground text-xs shrink-0 whitespace-nowrap ml-2">
-                        {new Date(note.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    {note.metadata?.category && typeof note.metadata.category === "string" ? (
-                      <div>
-                        <Badge variant="secondary" className="text-xs">
-                          {note.metadata.category as string}
-                        </Badge>
+                {history.map((note) => {
+                  const category = note.metadata?.category;
+                  const categoryString = typeof category === "string" ? category : null;
+                  
+                  return (
+                    <li
+                      key={note.id}
+                      className="rounded-md border border-border p-3 text-sm space-y-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-foreground line-clamp-3 flex-1 text-xs sm:text-sm">
+                          {note.summary}
+                        </p>
+                        <span className="text-muted-foreground text-xs shrink-0 whitespace-nowrap ml-2">
+                          {new Date(note.created_at).toLocaleDateString()}
+                        </span>
                       </div>
-                    ) : null}
-                  </li>
-                ))}
+                      {categoryString && (
+                        <div>
+                          <Badge variant="secondary" className="text-xs">
+                            {categoryString}
+                          </Badge>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </CardContent>
