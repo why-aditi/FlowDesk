@@ -9,6 +9,7 @@ import {
   inviteEmail,
 } from "@/lib/email-templates";
 
+
 const hookSecret = process.env.SEND_EMAIL_HOOK_SECRET;
 
 interface HookPayload {
