@@ -1,0 +1,155 @@
+import { NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase-server";
+import { generateJSON } from "@/lib/groq";
+
+interface AskResponse {
+  answer: string;
+}
+
+const SYSTEM_PROMPT = `You are a team knowledge assistant. Answer questions based on the provided knowledge base entries.
+
+Use the knowledge entries to provide accurate, helpful answers. If the answer isn't in the knowledge base, say so clearly.
+
+Return a JSON object with a single "answer" field containing your response.`;
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const question = body.question;
+    const teamId = body.team_id;
+
+    if (typeof question !== "string" || question.trim() === "") {
+      return NextResponse.json(
+        { error: "Missing or empty 'question' field in request body" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof teamId !== "string" || teamId.trim() === "") {
+      return NextResponse.json(
+        { error: "Missing or empty 'team_id' field in request body" },
+        { status: 400 }
+      );
+    }
+
+    // Get authenticated user
+    const supabase = await createServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Verify user is a member of the team
+    const { data: memberCheck, error: memberCheckError } = await supabase
+      .from("team_members")
+      .select("id")
+      .eq("team_id", teamId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (memberCheckError) {
+      console.error("[ask] Failed to verify team membership", { teamId, userId: user.id, error: memberCheckError });
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 }
+      );
+    }
+
+    if (!memberCheck) {
+      return NextResponse.json(
+        { error: "You must be a team member to ask questions" },
+        { status: 403 }
+      );
+    }
+
+    // Fetch knowledge entries for the team (most recent first, capped at 100)
+    const { data: entries, error: entriesError } = await supabase
+      .from("knowledge_entries")
+      .select("question, answer")
+      .eq("team_id", teamId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (entriesError) {
+      console.error("[ask] Failed to fetch knowledge entries", { teamId, error: entriesError });
+      return NextResponse.json(
+        { error: "Failed to fetch knowledge entries" },
+        { status: 500 }
+      );
+    }
+
+    if (!entries || entries.length === 0) {
+      return NextResponse.json(
+        { error: "No knowledge entries found for this team" },
+        { status: 404 }
+      );
+    }
+
+    // Build context from knowledge entries
+    const knowledgeContext = entries
+      .map((entry, index) => `Q${index + 1}: ${entry.question}\nA${index + 1}: ${entry.answer}`)
+      .join("\n\n");
+
+    const MAX_INPUT_CHARS = 12000;
+    const questionPart = `\n\nUser Question: ${question}`;
+    const contextPrefix = `Knowledge Base:\n`;
+    const truncationMarker = "...[context truncated]";
+    const overhead = contextPrefix.length + questionPart.length;
+    const trimmedContext =
+      knowledgeContext.length > MAX_INPUT_CHARS - overhead
+        ? knowledgeContext.slice(0, Math.max(0, MAX_INPUT_CHARS - overhead - truncationMarker.length)) + truncationMarker
+        : knowledgeContext;
+    const userInput = `${contextPrefix}${trimmedContext}${questionPart}`;
+
+    // Call Groq to generate answer
+    let result: AskResponse;
+    try {
+      result = await generateJSON<AskResponse>(
+        SYSTEM_PROMPT,
+        userInput,
+        (parsed) => {
+          if (typeof parsed !== "object" || parsed === null) {
+            throw new Error("Response must be an object");
+          }
+          const obj = parsed as Record<string, unknown>;
+          if (typeof obj.answer !== "string" || obj.answer.trim() === "") {
+            throw new Error("Response must have a non-empty 'answer' field");
+          }
+          return parsed as AskResponse;
+        }
+      );
+    } catch (err) {
+      console.error("[ask] AI processing failed", { teamId, error: err });
+      return NextResponse.json(
+        { error: "AI processing failed" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      { ok: true, answer: result.answer },
+      { status: 200 }
+    );
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: "Invalid JSON in request body" },
+        { status: 400 }
+      );
+    }
+
+    const message =
+      err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json(
+      { error: message },
+      { status: 500 }
+    );
+  }
+}

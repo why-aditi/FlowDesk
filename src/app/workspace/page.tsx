@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DashboardClient } from "./DashboardClient";
 
 function getFirstName(fullName: string | undefined, email: string): string {
   if (fullName?.trim()) {
@@ -21,7 +22,7 @@ function getFirstName(fullName: string | undefined, email: string): string {
 async function getDashboardData(userId: string) {
   const supabase = await createServerClient();
 
-  const [notesCountRes, tasksCountRes, teamsCountRes, recentNotesRes] =
+  const [notesCountRes, tasksCountRes, teamsCountRes, recentNotesRes, tasksRes] =
     await Promise.all([
       supabase
         .from("notes")
@@ -42,14 +43,21 @@ async function getDashboardData(userId: string) {
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(5),
+      supabase
+        .from("tasks")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10),
     ]);
 
   const notesCount = notesCountRes.error ? 0 : (notesCountRes.count ?? 0);
   const tasksCount = tasksCountRes.error ? 0 : (tasksCountRes.count ?? 0);
   const teamsCount = teamsCountRes.error ? 0 : (teamsCountRes.count ?? 0);
   const recentNotes = recentNotesRes.error ? [] : recentNotesRes.data ?? [];
+  const tasks = tasksRes.error ? [] : (tasksRes.data ?? []);
 
-  return { notesCount, tasksCount, teamsCount, recentNotes };
+  return { notesCount, tasksCount, teamsCount, recentNotes, tasks };
 }
 
 export default async function WorkspacePage() {
@@ -67,47 +75,49 @@ export default async function WorkspacePage() {
   const email = user.email ?? "";
   const firstName = getFirstName(fullName, email);
 
-  const { notesCount, tasksCount, teamsCount, recentNotes } =
+  const { notesCount, tasksCount, teamsCount, recentNotes, tasks } =
     await getDashboardData(user.id);
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">
+          <CardTitle className="text-xl sm:text-2xl">
             Welcome, {firstName}
           </CardTitle>
-          <CardDescription>
-            Here’s what’s happening in your workspace.
+          <CardDescription className="text-sm sm:text-base">
+            Here's what's happening in your workspace.
           </CardDescription>
         </CardHeader>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Notes saved</CardDescription>
-            <CardTitle className="text-3xl">{notesCount}</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Notes saved</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">{notesCount}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Tasks active</CardDescription>
-            <CardTitle className="text-3xl">{tasksCount}</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Tasks active</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">{tasksCount}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Teams joined</CardDescription>
-            <CardTitle className="text-3xl">{teamsCount}</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Teams joined</CardDescription>
+            <CardTitle className="text-2xl sm:text-3xl">{teamsCount}</CardTitle>
           </CardHeader>
         </Card>
       </div>
 
+      <DashboardClient initialTasks={tasks} />
+
       <Card>
         <CardHeader>
-          <CardTitle>Recent notes</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-lg sm:text-xl">Recent notes</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Your 5 most recent notes across inbox, research, and meetings.
           </CardDescription>
         </CardHeader>
@@ -122,14 +132,14 @@ export default async function WorkspacePage() {
               {recentNotes.map((note) => (
                 <li
                   key={note.id}
-                  className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-md border border-border px-3 py-2 text-sm"
                 >
                   <span className="font-medium truncate">
                     {note.title || "Untitled"}
                   </span>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="secondary">{note.type}</Badge>
-                    <span className="text-muted-foreground">
+                    <Badge variant="secondary" className="text-xs">{note.type}</Badge>
+                    <span className="text-muted-foreground text-xs">
                       {new Date(note.created_at).toLocaleDateString()}
                     </span>
                   </div>

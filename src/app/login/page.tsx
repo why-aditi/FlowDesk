@@ -91,11 +91,11 @@ export default function LoginPage() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
+      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:py-12">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl">Log in to your account</CardTitle>
-            <CardDescription>Welcome back.</CardDescription>
+            <CardTitle className="text-xl sm:text-2xl">Log in to your account</CardTitle>
+            <CardDescription className="text-sm sm:text-base">Welcome back.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

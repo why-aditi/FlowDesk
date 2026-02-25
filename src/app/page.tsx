@@ -20,21 +20,21 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
           <Link
             href="/"
-            className="font-semibold text-lg text-foreground hover:text-muted-foreground transition-colors"
+            className="font-semibold text-base sm:text-lg text-foreground hover:text-muted-foreground transition-colors"
           >
             FlowDesk
           </Link>
-          <nav className="flex items-center gap-4">
+          <nav className="flex items-center gap-2 sm:gap-4">
             <Link
               href="/login"
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Login
             </Link>
-            <Button asChild size="sm">
+            <Button asChild size="sm" className="text-xs sm:text-sm">
               <Link href="/signup">Sign Up</Link>
             </Button>
           </nav>
@@ -42,17 +42,17 @@ export default function Home() {
       </header>
 
       <main className="flex-1">
-        <section className="max-w-6xl mx-auto px-4 py-20 md:py-28 text-center">
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
+        <section className="max-w-6xl mx-auto px-4 py-12 sm:py-20 md:py-28 text-center">
+          <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
             Knowledge workers spend 41% of their time on busywork. FlowDesk
             gives it back.
           </h1>
-          <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="mt-4 sm:mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
             The tools you use — email, docs, calendars, chat — don&apos;t talk to
             each other. You become the integration layer. We fix that.
           </p>
-          <div className="mt-10">
-            <Button asChild size="lg" className="text-base px-8">
+          <div className="mt-8 sm:mt-10">
+            <Button asChild size="lg" className="text-sm sm:text-base px-6 sm:px-8">
               <Link href="/signup">Get Started Free</Link>
             </Button>
           </div>
@@ -60,12 +60,12 @@ export default function Home() {
 
         <section
           id="features"
-          className="max-w-6xl mx-auto px-4 py-16 md:py-20"
+          className="max-w-6xl mx-auto px-4 py-12 sm:py-16 md:py-20"
         >
-          <h2 className="text-2xl md:text-3xl font-semibold text-center text-foreground mb-12">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-center text-foreground mb-8 sm:mb-12">
             Built for how you work
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <Card className="flex flex-col">
               <CardHeader>
                 <CardTitle>Smart Inbox</CardTitle>
@@ -114,17 +114,17 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="max-w-6xl mx-auto px-4 py-16 md:py-20">
-          <h2 className="text-2xl md:text-3xl font-semibold text-center text-foreground mb-12">
+        <section className="max-w-6xl mx-auto px-4 py-12 sm:py-16 md:py-20">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-center text-foreground mb-8 sm:mb-12">
             How FlowDesk differs from existing tools
           </h2>
-          <div className="overflow-x-auto rounded-lg border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border -mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px]">Tool</TableHead>
-                  <TableHead>What it does</TableHead>
-                  <TableHead className="bg-muted/50 font-medium">
+                  <TableHead className="w-[120px] sm:w-[180px] text-xs sm:text-sm">Tool</TableHead>
+                  <TableHead className="text-xs sm:text-sm">What it does</TableHead>
+                  <TableHead className="bg-muted/50 font-medium text-xs sm:text-sm">
                     What FlowDesk does instead
                   </TableHead>
                 </TableRow>
@@ -191,12 +191,12 @@ export default function Home() {
 
         <section
           id="pricing"
-          className="max-w-6xl mx-auto px-4 py-16 md:py-20"
+          className="max-w-6xl mx-auto px-4 py-12 sm:py-16 md:py-20"
         >
-          <h2 className="text-2xl md:text-3xl font-semibold text-center text-foreground mb-12">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-semibold text-center text-foreground mb-6 sm:mb-12">
             Pricing
           </h2>
-          <p className="text-center text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-center text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto px-2">
             FlowDesk is free to get started. Upgrade when you need more power.
           </p>
         </section>

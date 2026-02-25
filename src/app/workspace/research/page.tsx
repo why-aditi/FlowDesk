@@ -1,10 +1,35 @@
-export default function ResearchPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-semibold">Research Copilot</h1>
-      <p className="mt-2 text-muted-foreground">
-        Type a topic or upload a PDF to get a structured outline and key points.
-      </p>
-    </div>
-  );
+import { createServerClient } from "@/lib/supabase-server";
+import { ResearchClient } from "./ResearchClient";
+
+async function getResearchHistory(userId: string) {
+  const supabase = await createServerClient();
+  const { data, error } = await supabase
+    .from("notes")
+    .select("id, title, summary, metadata, created_at")
+    .eq("user_id", userId)
+    .eq("type", "research")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    return [];
+  }
+
+  return data ?? [];
+}
+
+export default async function ResearchPage() {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return null;
+  }
+
+  const researchHistory = await getResearchHistory(user.id);
+
+  return <ResearchClient initialHistory={researchHistory} />;
 }
