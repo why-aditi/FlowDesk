@@ -12,11 +12,11 @@ function timeToMinutes(time: string): number | null {
   return hours * 60 + minutes;
 }
 
-// Helper function to get current time in HH:MM format
+// Helper function to get current time in HH:MM format (UTC)
 function getCurrentTime(): string {
   const now = new Date();
-  const hours = now.getHours().toString().padStart(2, "0");
-  const minutes = now.getMinutes().toString().padStart(2, "0");
+  const hours = now.getUTCHours().toString().padStart(2, "0");
+  const minutes = now.getUTCMinutes().toString().padStart(2, "0");
   return `${hours}:${minutes}`;
 }
 
@@ -25,13 +25,13 @@ function addTimeToTimestamp(timestamp: string, timeToAdd: string): Date | null {
   if (!timestamp || !timeToAdd) return null;
   const baseDate = new Date(timestamp);
   if (isNaN(baseDate.getTime())) return null;
-  
+
   const parts = timeToAdd.split(":");
   if (parts.length !== 2) return null;
   const hours = Number(parts[0]);
   const minutes = Number(parts[1]);
   if (isNaN(hours) || isNaN(minutes)) return null;
-  
+
   baseDate.setHours(baseDate.getHours() + hours);
   baseDate.setMinutes(baseDate.getMinutes() + minutes);
   return baseDate;
@@ -150,10 +150,10 @@ export async function GET() {
           } else {
             lastReminderStr = String(task.last_reminder_sent);
           }
-          
+
           const lastReminderDate = new Date(lastReminderStr);
           if (isNaN(lastReminderDate.getTime())) return false; // Invalid date
-          
+
           // Ensure frequency_time is a valid string
           if (typeof task.frequency_time !== "string") {
             return false;
@@ -164,7 +164,7 @@ export async function GET() {
             frequencyTimeStr
           );
           if (!nextReminderDate) return false; // Invalid time format or date
-          
+
           const now = new Date();
 
           // Check if frequency time has passed since last reminder
@@ -191,7 +191,7 @@ export async function GET() {
       err instanceof Error ? err.message : "Internal server error";
     const stack = err instanceof Error ? err.stack : undefined;
     return NextResponse.json(
-      { 
+      {
         error: message,
         ...(process.env.NODE_ENV === "development" && stack ? { stack } : {})
       },

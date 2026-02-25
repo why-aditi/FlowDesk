@@ -123,7 +123,6 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
                 href="/workspace/settings"
                 onClick={() => {
                   handleNavClick("settings");
-                  onLinkClick?.();
                 }}
                 className="flex cursor-pointer items-center"
               >

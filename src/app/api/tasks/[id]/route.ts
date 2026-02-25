@@ -45,7 +45,18 @@ export async function PATCH(
     }
 
     if (body.due_date !== undefined) {
-      updates.due_date = body.due_date ? new Date(body.due_date).toISOString() : null;
+      if (body.due_date === null || body.due_date === "") {
+        updates.due_date = null;
+      } else {
+        const d = new Date(body.due_date);
+        if (isNaN(d.getTime())) {
+          return NextResponse.json(
+            { error: "Invalid due_date: must be a valid date string" },
+            { status: 400 }
+          );
+        }
+        updates.due_date = d.toISOString();
+      }
     }
 
     if (body.reminder_time !== undefined) {
@@ -68,7 +79,14 @@ export async function PATCH(
     if (body.frequency_hours !== undefined || body.frequency_minutes !== undefined) {
       const hours = Math.max(0, Math.floor(Number(body.frequency_hours) || 0));
       const minutes = Math.max(0, Math.min(59, Math.floor(Number(body.frequency_minutes) || 0)));
-      
+
+      if (body.frequency_hours !== undefined && hours > 99) {
+        return NextResponse.json(
+          { error: "frequency_hours must be between 0 and 99" },
+          { status: 400 }
+        );
+      }
+
       if (hours === 0 && minutes === 0) {
         updates.frequency_time = null;
       } else {
@@ -82,20 +100,39 @@ export async function PATCH(
     }
 
     if (body.next_run !== undefined) {
-      updates.next_run = body.next_run ? new Date(body.next_run).toISOString() : null;
+      if (body.next_run === null || body.next_run === "") {
+        updates.next_run = null;
+      } else {
+        const nr = new Date(body.next_run);
+        if (isNaN(nr.getTime())) {
+          return NextResponse.json(
+            { error: "Invalid next_run: must be a valid date string" },
+            { status: 400 }
+          );
+        }
+        updates.next_run = nr.toISOString();
+      }
     }
 
     // Update task
-    const { error: updateError } = await supabase
+    const { data: updatedData, error: updateError } = await supabase
       .from("tasks")
       .update(updates)
       .eq("id", id)
-      .eq("user_id", user.id); // Ensure user owns the task
+      .eq("user_id", user.id) // Ensure user owns the task
+      .select();
 
     if (updateError) {
       return NextResponse.json(
         { error: `Failed to update task: ${updateError.message}` },
         { status: 500 }
+      );
+    }
+
+    if (!updatedData || updatedData.length === 0) {
+      return NextResponse.json(
+        { error: "Task not found" },
+        { status: 404 }
       );
     }
 
@@ -139,16 +176,24 @@ export async function DELETE(
     }
 
     // Delete task
-    const { error: deleteError } = await supabase
+    const { data: deletedData, error: deleteError } = await supabase
       .from("tasks")
       .delete()
       .eq("id", id)
-      .eq("user_id", user.id); // Ensure user owns the task
+      .eq("user_id", user.id) // Ensure user owns the task
+      .select();
 
     if (deleteError) {
       return NextResponse.json(
         { error: `Failed to delete task: ${deleteError.message}` },
         { status: 500 }
+      );
+    }
+
+    if (!deletedData || deletedData.length === 0) {
+      return NextResponse.json(
+        { error: "Task not found" },
+        { status: 404 }
       );
     }
 

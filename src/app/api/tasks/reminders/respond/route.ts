@@ -41,7 +41,6 @@ export async function POST(request: Request) {
     // Build update object
     const updates: Record<string, unknown> = {
       status: newStatus,
-      last_reminder_sent: new Date().toISOString(), // Track when reminder was sent
     };
 
     const { error: updateError } = await supabase

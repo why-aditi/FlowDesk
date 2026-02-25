@@ -17,22 +17,28 @@ async function getTeamData(slug: string, userId: string) {
   }
 
   // Verify user is a member
-  const { data: memberCheck } = await supabase
+  const { data: memberCheck, error: memberCheckError } = await supabase
     .from("team_members")
     .select("id")
     .eq("team_id", team.id)
     .eq("user_id", userId)
     .single();
 
+  if (memberCheckError && memberCheckError.code !== "PGRST116") {
+    throw memberCheckError;
+  }
+
   if (!memberCheck) {
     return null;
   }
 
   // Fetch team members with user info
-  const { data: membersData } = await supabase
+  const { data: membersData, error: membersError } = await supabase
     .from("team_members")
     .select("user_id, users!inner(id, email, full_name)")
     .eq("team_id", team.id);
+
+  if (membersError) throw membersError;
 
   const members =
     membersData?.map((m) => {
@@ -47,13 +53,15 @@ async function getTeamData(slug: string, userId: string) {
     }) || [];
 
   // Fetch knowledge entries
-  const { data: knowledgeEntries } = await supabase
+  const { data: knowledgeEntries, error: knowledgeError } = await supabase
     .from("knowledge_entries")
     .select(
       "id, question, answer, source_note_id, created_at, notes!left(title)"
     )
     .eq("team_id", team.id)
     .order("created_at", { ascending: false });
+
+  if (knowledgeError) throw knowledgeError;
 
   const entries =
     knowledgeEntries?.map((entry) => {
@@ -71,12 +79,14 @@ async function getTeamData(slug: string, userId: string) {
     }) || [];
 
   // Fetch user's notes for the picker
-  const { data: userNotes } = await supabase
+  const { data: userNotes, error: notesError } = await supabase
     .from("notes")
     .select("id, title, type, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(100);
+
+  if (notesError) throw notesError;
 
   return {
     team,

@@ -65,6 +65,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Authenticate first — before consuming AI quota
+    const supabase = await createServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     // Call Groq to summarize the meeting
     let summary: MeetingSummary;
     try {
@@ -79,20 +93,6 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: `AI processing failed: ${errorMessage}` },
         { status: 500 }
-      );
-    }
-
-    // Get authenticated user
-    const supabase = await createServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
       );
     }
 

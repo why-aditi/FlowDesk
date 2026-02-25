@@ -63,6 +63,20 @@ export async function POST(request: Request) {
       );
     }
 
+    // Authenticate first — before consuming AI quota
+    const supabase = await createServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     // Build the input - combine topic and PDF text if provided
     const userInput = pdfText
       ? `Research Topic: ${topic}\n\nPDF Content:\n${pdfText}`
@@ -82,20 +96,6 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: `AI processing failed: ${errorMessage}` },
         { status: 500 }
-      );
-    }
-
-    // Get authenticated user
-    const supabase = await createServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
       );
     }
 

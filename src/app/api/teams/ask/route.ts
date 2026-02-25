@@ -61,12 +61,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // Fetch all knowledge entries for the team
+    // Fetch knowledge entries for the team (most recent first, capped at 100)
     const { data: entries, error: entriesError } = await supabase
       .from("knowledge_entries")
       .select("question, answer")
       .eq("team_id", teamId)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(100);
 
     if (entriesError) {
       return NextResponse.json(
@@ -87,7 +88,11 @@ export async function POST(request: Request) {
       .map((entry, index) => `Q${index + 1}: ${entry.question}\nA${index + 1}: ${entry.answer}`)
       .join("\n\n");
 
-    const userInput = `Knowledge Base:\n${knowledgeContext}\n\nUser Question: ${question}`;
+    const MAX_INPUT_CHARS = 12000;
+    const rawInput = `Knowledge Base:\n${knowledgeContext}\n\nUser Question: ${question}`;
+    const userInput = rawInput.length > MAX_INPUT_CHARS
+      ? rawInput.slice(0, MAX_INPUT_CHARS) + "\n...[context truncated]"
+      : rawInput;
 
     // Call Groq to generate answer
     let result: AskResponse;

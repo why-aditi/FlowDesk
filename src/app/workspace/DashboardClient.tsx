@@ -44,6 +44,27 @@ export function DashboardClient({ initialTasks }: DashboardClientProps) {
     onNo: () => void;
   } | null>(null);
 
+  // Centralized handler for reminder responses
+  async function respondToReminder(taskId: string, completed: boolean) {
+    const response = await fetch("/api/tasks/reminders/respond", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ task_id: taskId, completed }),
+      credentials: "include",
+    });
+
+    if (response.ok) {
+      if (completed) {
+        toast.success("Task marked as done!");
+      } else {
+        toast.info("Task marked as in progress");
+      }
+      await fetchTasks();
+    }
+  }
+
   // Poll for reminders every 30 seconds
   useEffect(() => {
     const checkReminders = async () => {
@@ -64,84 +85,16 @@ export function DashboardClient({ initialTasks }: DashboardClientProps) {
           await showNotification(`Task Reminder: ${reminder.title}`, {
             body: reminder.description || "Time to check on this task!",
             taskId: reminder.id,
-            onYes: async () => {
-              const response = await fetch("/api/tasks/reminders/respond", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  task_id: reminder.id,
-                  completed: true,
-                }),
-                credentials: "include",
-              });
-
-              if (response.ok) {
-                toast.success("Task marked as done!");
-                await fetchTasks();
-              }
-            },
-            onNo: async () => {
-              const response = await fetch("/api/tasks/reminders/respond", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  task_id: reminder.id,
-                  completed: false,
-                }),
-                credentials: "include",
-              });
-
-              if (response.ok) {
-                toast.info("Task marked as in progress");
-                await fetchTasks();
-              }
-            },
+            onYes: () => respondToReminder(reminder.id, true),
+            onNo: () => respondToReminder(reminder.id, false),
             onOpenDialog: () => {
               setReminderDialog({
                 open: true,
                 title: `Task Reminder: ${reminder.title}`,
                 description: reminder.description || "Time to check on this task!",
                 taskId: reminder.id,
-                onYes: async () => {
-                  const response = await fetch("/api/tasks/reminders/respond", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      task_id: reminder.id,
-                      completed: true,
-                    }),
-                    credentials: "include",
-                  });
-
-                  if (response.ok) {
-                    toast.success("Task marked as done!");
-                    await fetchTasks();
-                  }
-                },
-                onNo: async () => {
-                  const response = await fetch("/api/tasks/reminders/respond", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      task_id: reminder.id,
-                      completed: false,
-                    }),
-                    credentials: "include",
-                  });
-
-                  if (response.ok) {
-                    toast.info("Task marked as in progress");
-                    await fetchTasks();
-                  }
-                },
+                onYes: () => respondToReminder(reminder.id, true),
+                onNo: () => respondToReminder(reminder.id, false),
               });
             },
           });

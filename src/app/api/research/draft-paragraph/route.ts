@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createServerClient } from "@/lib/supabase-server";
 import { generateJSON } from "@/lib/groq";
 
 interface DraftParagraphResponse {
@@ -44,6 +45,20 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Missing or empty 'keyPoints' array in request body" },
         { status: 400 }
+      );
+    }
+
+    // Authenticate — before consuming AI quota
+    const supabase = await createServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
 

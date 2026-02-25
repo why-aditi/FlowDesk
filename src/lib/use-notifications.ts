@@ -49,11 +49,16 @@ export function useNotifications() {
         tag: `task-${taskId}`, // Prevent duplicate notifications
       });
 
+      // Track whether the notification was explicitly clicked
+      // so notification.onclose doesn't also fire onNo after a click
+      let handledByClick = false;
+
       // Handle notification click - open dialog
       notification.onclick = () => {
+        handledByClick = true;
         window.focus();
         notification.close();
-        
+
         // Open dialog if callback provided, otherwise use confirm
         if (onOpenDialog) {
           onOpenDialog();
@@ -61,7 +66,7 @@ export function useNotifications() {
           const confirmed = confirm(
             `${title}\n\n${notificationOptions.body || ""}\n\nIs this task completed? (OK = Yes, Cancel = No)`
           );
-          
+
           if (confirmed && onYes) {
             onYes();
           } else if (!confirmed && onNo) {
@@ -72,6 +77,8 @@ export function useNotifications() {
 
       // Handle notification close (user dismissed) - mark as in_progress
       notification.onclose = () => {
+        // Skip if click already handled the interaction
+        if (handledByClick) return;
         // If user dismissed without responding, mark as in_progress
         if (onNo) {
           onNo();

@@ -39,12 +39,27 @@ export async function POST(request: Request) {
     // Generate slug from name
     const slug = generateSlug(name);
 
+    if (!slug) {
+      return NextResponse.json(
+        { error: "Team name is too short or contains only special characters" },
+        { status: 400 }
+      );
+    }
+
     // Check if slug already exists
-    const { data: existingTeam } = await supabase
+    const { data: existingTeam, error: slugError } = await supabase
       .from("teams")
       .select("id")
       .eq("slug", slug)
       .single();
+
+    if (slugError && slugError.code !== "PGRST116") {
+      // PGRST116 = "no rows found" — that's the expected success case
+      return NextResponse.json(
+        { error: `Failed to check team name: ${slugError.message}` },
+        { status: 500 }
+      );
+    }
 
     if (existingTeam) {
       return NextResponse.json(
@@ -78,6 +93,8 @@ export async function POST(request: Request) {
     });
 
     if (memberError) {
+      // Rollback: remove the orphaned team so the DB stays consistent
+      await supabase.from("teams").delete().eq("id", team.id);
       return NextResponse.json(
         { error: `Failed to add creator as member: ${memberError.message}` },
         { status: 500 }
