@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  Clock,
 } from "lucide-react";
 import { useWorkspaceStore, type WorkspaceTab } from "@/store/workspace";
 import { createBrowserClient } from "@/lib/supabase";
@@ -37,6 +38,7 @@ const NAV_ITEMS: { tab: WorkspaceTab; label: string; href: string; icon: React.C
   { tab: "home", label: "Home", href: "/workspace", icon: Home },
   { tab: "inbox", label: "Inbox", href: "/workspace/inbox", icon: Inbox },
   { tab: "research", label: "Research", href: "/workspace/research", icon: BookOpen },
+  { tab: "planner", label: "Planner", href: "/workspace/planner", icon: Clock },
   { tab: "meetings", label: "Meetings", href: "/workspace/meetings", icon: Calendar },
   { tab: "tasks", label: "Tasks", href: "/workspace/tasks", icon: CheckSquare },
   { tab: "teams", label: "Teams", href: "/workspace/teams", icon: Users },
@@ -46,6 +48,7 @@ function pathnameToTab(pathname: string): WorkspaceTab {
   if (pathname === "/workspace") return "home";
   if (pathname.startsWith("/workspace/inbox")) return "inbox";
   if (pathname.startsWith("/workspace/research")) return "research";
+  if (pathname.startsWith("/workspace/planner")) return "planner";
   if (pathname.startsWith("/workspace/meetings")) return "meetings";
   if (pathname.startsWith("/workspace/tasks")) return "tasks";
   if (pathname.startsWith("/workspace/teams")) return "teams";

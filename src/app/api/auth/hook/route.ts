@@ -60,10 +60,8 @@ function resolveSubjectAndHtml(payload: HookPayload, confirmUrl: string) {
 
   switch (email_action_type) {
     case "signup":
-      return {
-        subject: "Confirm your FlowDesk account",
-        html: confirmationEmail(name, confirmUrl),
-      };
+      // Email confirmation disabled - skip sending confirmation email
+      return null;
     case "magiclink":
       return {
         subject: "Your FlowDesk sign-in link",
@@ -129,6 +127,12 @@ export async function POST(req: NextRequest) {
   }
 
   const { email_data, user } = data;
+
+  // Skip sending email for signup (email confirmation disabled)
+  if (email_data.email_action_type === "signup") {
+    return NextResponse.json({}, { status: 200 });
+  }
+
   const confirmUrl = buildConfirmUrl(
     email_data.token_hash,
     email_data.email_action_type,
