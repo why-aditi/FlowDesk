@@ -47,12 +47,20 @@ export async function POST(request: Request) {
     }
 
     // Verify user is a member of the team
-    const { data: memberCheck } = await supabase
+    const { data: memberCheck, error: memberCheckError } = await supabase
       .from("team_members")
       .select("id")
       .eq("team_id", teamId)
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
+
+    if (memberCheckError) {
+      console.error("[ask] Failed to verify team membership", { teamId, userId: user.id, error: memberCheckError });
+      return NextResponse.json(
+        { error: "Internal server error" },
+        { status: 500 }
+      );
+    }
 
     if (!memberCheck) {
       return NextResponse.json(
@@ -70,8 +78,9 @@ export async function POST(request: Request) {
       .limit(100);
 
     if (entriesError) {
+      console.error("[ask] Failed to fetch knowledge entries", { teamId, error: entriesError });
       return NextResponse.json(
-        { error: `Failed to fetch knowledge entries: ${entriesError.message}` },
+        { error: "Failed to fetch knowledge entries" },
         { status: 500 }
       );
     }
@@ -91,10 +100,11 @@ export async function POST(request: Request) {
     const MAX_INPUT_CHARS = 12000;
     const questionPart = `\n\nUser Question: ${question}`;
     const contextPrefix = `Knowledge Base:\n`;
+    const truncationMarker = "...[context truncated]";
     const overhead = contextPrefix.length + questionPart.length;
     const trimmedContext =
       knowledgeContext.length > MAX_INPUT_CHARS - overhead
-        ? knowledgeContext.slice(0, Math.max(0, MAX_INPUT_CHARS - overhead)) + "...[context truncated]"
+        ? knowledgeContext.slice(0, Math.max(0, MAX_INPUT_CHARS - overhead - truncationMarker.length)) + truncationMarker
         : knowledgeContext;
     const userInput = `${contextPrefix}${trimmedContext}${questionPart}`;
 
@@ -116,10 +126,9 @@ export async function POST(request: Request) {
         }
       );
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to generate answer";
+      console.error("[ask] AI processing failed", { teamId, error: err });
       return NextResponse.json(
-        { error: `AI processing failed: ${errorMessage}` },
+        { error: "AI processing failed" },
         { status: 500 }
       );
     }

@@ -14,6 +14,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 
 interface InboxNote {
@@ -62,12 +63,22 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
           credentials: "include",
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
-          toast.error("Try again");
+          let errorMessage = `Request failed (${response.status})`;
+          try {
+            const errData = await response.json();
+            if (errData?.error) errorMessage = `${errorMessage}: ${errData.error}`;
+          } catch {
+            try {
+              const text = await response.text();
+              if (text) errorMessage = `${errorMessage}: ${text}`;
+            } catch { /* ignore */ }
+          }
+          toast.error(errorMessage);
           return;
         }
+
+        const data = await response.json();
 
         // Set triage result to display in TriageCard
         if (data.triage) {
@@ -97,7 +108,9 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
         setMessage("");
         toast.success("Triaged!");
       } catch (err) {
-        toast.error("Try again");
+        console.error("[InboxClient] handleTriage error", err);
+        const message = err instanceof Error ? err.message : String(err);
+        toast.error(`Failed to triage: ${message}`);
       }
     });
   }
@@ -233,9 +246,12 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             {selectedNote && (
-              <p className="text-xs text-muted-foreground">
-                {new Date(selectedNote.created_at).toLocaleString()}
-              </p>
+              <>
+                <DialogTitle>{selectedNote.summary.slice(0, 60) || "Inbox Note"}</DialogTitle>
+                <p className="text-xs text-muted-foreground">
+                  {new Date(selectedNote.created_at).toLocaleString()}
+                </p>
+              </>
             )}
           </DialogHeader>
           {selectedNote && (

@@ -76,30 +76,36 @@ export function TeamsClient() {
         throw teamsError;
       }
 
-      // Fetch member counts and knowledge counts for each team
-      const teamsWithCounts = await Promise.all(
-        (teamsData || []).map(async (team) => {
-          const [memberRes, knowledgeRes] = await Promise.all([
-            supabase
-              .from("team_members")
-              .select("id", { count: "exact", head: true })
-              .eq("team_id", team.id),
-            supabase
-              .from("knowledge_entries")
-              .select("id", { count: "exact", head: true })
-              .eq("team_id", team.id),
-          ]);
+      // Fetch member and knowledge counts in two batch queries
+      const [membersCountRes, knowledgeCountRes] = await Promise.all([
+        supabase
+          .from("team_members")
+          .select("team_id", { count: "exact" })
+          .in("team_id", teamIds),
+        supabase
+          .from("knowledge_entries")
+          .select("team_id", { count: "exact" })
+          .in("team_id", teamIds),
+      ]);
 
-          if (memberRes.error) throw memberRes.error;
-          if (knowledgeRes.error) throw knowledgeRes.error;
+      if (membersCountRes.error) throw membersCountRes.error;
+      if (knowledgeCountRes.error) throw knowledgeCountRes.error;
 
-          return {
-            ...team,
-            member_count: memberRes.count ?? 0,
-            knowledge_count: knowledgeRes.count ?? 0,
-          };
-        })
-      );
+      // Build count maps from the returned rows
+      const memberCountMap: Record<string, number> = {};
+      for (const row of membersCountRes.data || []) {
+        memberCountMap[row.team_id] = (memberCountMap[row.team_id] ?? 0) + 1;
+      }
+      const knowledgeCountMap: Record<string, number> = {};
+      for (const row of knowledgeCountRes.data || []) {
+        knowledgeCountMap[row.team_id] = (knowledgeCountMap[row.team_id] ?? 0) + 1;
+      }
+
+      const teamsWithCounts = (teamsData || []).map((team) => ({
+        ...team,
+        member_count: memberCountMap[team.id] ?? 0,
+        knowledge_count: knowledgeCountMap[team.id] ?? 0,
+      }));
 
       setTeams(teamsWithCounts);
     } catch (err) {
@@ -291,6 +297,7 @@ export function TeamsClient() {
                         disabled={isInviting === team.id}
                         size="sm"
                         className="w-full sm:w-auto"
+                        aria-label={isInviting === team.id ? `Inviting ${team.name}` : undefined}
                       >
                         {isInviting === team.id ? (
                           <Loader2Icon className="animate-spin" />

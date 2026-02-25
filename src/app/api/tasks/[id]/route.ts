@@ -37,6 +37,12 @@ export async function PATCH(
     }
 
     if (body.title !== undefined) {
+      if (typeof body.title !== "string" || body.title.trim() === "") {
+        return NextResponse.json(
+          { error: "title must be a non-empty string" },
+          { status: 400 }
+        );
+      }
       updates.title = body.title;
     }
 
@@ -73,12 +79,23 @@ export async function PATCH(
             { status: 400 }
           );
         }
+      } else {
+        return NextResponse.json(
+          { error: "reminder_time must be a string in HH:MM format or null" },
+          { status: 400 }
+        );
       }
     }
 
     if (body.frequency_hours !== undefined || body.frequency_minutes !== undefined) {
-      const rawHours = body.frequency_hours ?? 0;
-      const rawMinutes = body.frequency_minutes ?? 0;
+      if (body.frequency_hours === undefined || body.frequency_minutes === undefined) {
+        return NextResponse.json(
+          { error: "frequency_hours and frequency_minutes must be provided together" },
+          { status: 400 }
+        );
+      }
+      const rawHours = body.frequency_hours;
+      const rawMinutes = body.frequency_minutes;
 
       const hoursNum = Number(rawHours);
       const minutesNum = Number(rawMinutes);
@@ -133,6 +150,14 @@ export async function PATCH(
         }
         updates.next_run = nr.toISOString();
       }
+    }
+
+    // Guard: nothing to update
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: "No updatable fields provided" },
+        { status: 400 }
+      );
     }
 
     // Update task
