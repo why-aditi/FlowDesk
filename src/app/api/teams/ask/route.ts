@@ -89,10 +89,14 @@ export async function POST(request: Request) {
       .join("\n\n");
 
     const MAX_INPUT_CHARS = 12000;
-    const rawInput = `Knowledge Base:\n${knowledgeContext}\n\nUser Question: ${question}`;
-    const userInput = rawInput.length > MAX_INPUT_CHARS
-      ? rawInput.slice(0, MAX_INPUT_CHARS) + "\n...[context truncated]"
-      : rawInput;
+    const questionPart = `\n\nUser Question: ${question}`;
+    const contextPrefix = `Knowledge Base:\n`;
+    const overhead = contextPrefix.length + questionPart.length;
+    const trimmedContext =
+      knowledgeContext.length > MAX_INPUT_CHARS - overhead
+        ? knowledgeContext.slice(0, Math.max(0, MAX_INPUT_CHARS - overhead)) + "...[context truncated]"
+        : knowledgeContext;
+    const userInput = `${contextPrefix}${trimmedContext}${questionPart}`;
 
     // Call Groq to generate answer
     let result: AskResponse;

@@ -45,8 +45,42 @@ function validateMeetingSummary(parsed: unknown): MeetingSummary {
     throw new Error("Response must have a non-empty 'summary' field");
   }
 
+  if (!Array.isArray(obj.decisions)) {
+    throw new Error("Response must have a 'decisions' array");
+  }
+  for (let i = 0; i < (obj.decisions as unknown[]).length; i++) {
+    if (typeof (obj.decisions as unknown[])[i] !== "string") {
+      throw new Error(`decisions[${i}] must be a string`);
+    }
+  }
+
   if (!Array.isArray(obj.action_items)) {
     throw new Error("Response must have an 'action_items' array");
+  }
+  for (let i = 0; i < (obj.action_items as unknown[]).length; i++) {
+    const item = (obj.action_items as unknown[])[i];
+    if (typeof item !== "object" || item === null) {
+      throw new Error(`action_items[${i}] must be an object`);
+    }
+    const ai = item as Record<string, unknown>;
+    if (typeof ai.task !== "string" || (ai.task as string).trim() === "") {
+      throw new Error(`action_items[${i}].task must be a non-empty string`);
+    }
+    if (ai.owner !== undefined && ai.owner !== null && typeof ai.owner !== "string") {
+      throw new Error(`action_items[${i}].owner must be a string or null`);
+    }
+    if (ai.due !== undefined && ai.due !== null && typeof ai.due !== "string") {
+      throw new Error(`action_items[${i}].due must be a string or null`);
+    }
+  }
+
+  if (!Array.isArray(obj.open_questions)) {
+    throw new Error("Response must have an 'open_questions' array");
+  }
+  for (let i = 0; i < (obj.open_questions as unknown[]).length; i++) {
+    if (typeof (obj.open_questions as unknown[])[i] !== "string") {
+      throw new Error(`open_questions[${i}] must be a string`);
+    }
   }
 
   return parsed as MeetingSummary;
@@ -56,13 +90,26 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const transcript = body.transcript;
-    const title = body.title;
+    const rawTitle = body.title;
 
     if (typeof transcript !== "string" || transcript.trim() === "") {
       return NextResponse.json(
         { error: "Missing or empty 'transcript' field in request body" },
         { status: 400 }
       );
+    }
+
+    // Validate title type — null/undefined is fine (treated as empty), but other non-string types are rejected
+    let title: string;
+    if (rawTitle == null) {
+      title = "";
+    } else if (typeof rawTitle !== "string") {
+      return NextResponse.json(
+        { error: "'title' must be a string" },
+        { status: 400 }
+      );
+    } else {
+      title = rawTitle;
     }
 
     // Authenticate first — before consuming AI quota
@@ -103,7 +150,7 @@ export async function POST(request: Request) {
       content: transcript, // Original transcript
       summary: summary.summary,
       metadata: summary,
-      title: title?.trim() || "Meeting Summary",
+      title: title.trim() || "Meeting Summary",
     });
 
     if (insertError) {

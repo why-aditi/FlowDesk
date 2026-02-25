@@ -77,21 +77,42 @@ export async function PATCH(
     }
 
     if (body.frequency_hours !== undefined || body.frequency_minutes !== undefined) {
-      const hours = Math.max(0, Math.floor(Number(body.frequency_hours) || 0));
-      const minutes = Math.max(0, Math.min(59, Math.floor(Number(body.frequency_minutes) || 0)));
+      const rawHours = body.frequency_hours ?? 0;
+      const rawMinutes = body.frequency_minutes ?? 0;
 
-      if (body.frequency_hours !== undefined && hours > 99) {
+      const hoursNum = Number(rawHours);
+      const minutesNum = Number(rawMinutes);
+
+      if (isNaN(hoursNum) || !Number.isInteger(hoursNum)) {
+        return NextResponse.json(
+          { error: "frequency_hours must be an integer" },
+          { status: 400 }
+        );
+      }
+      if (isNaN(minutesNum) || !Number.isInteger(minutesNum)) {
+        return NextResponse.json(
+          { error: "frequency_minutes must be an integer" },
+          { status: 400 }
+        );
+      }
+      if (hoursNum < 0 || hoursNum > 99) {
         return NextResponse.json(
           { error: "frequency_hours must be between 0 and 99" },
           { status: 400 }
         );
       }
+      if (minutesNum < 0 || minutesNum > 59) {
+        return NextResponse.json(
+          { error: "frequency_minutes must be between 0 and 59" },
+          { status: 400 }
+        );
+      }
 
-      if (hours === 0 && minutes === 0) {
+      if (hoursNum === 0 && minutesNum === 0) {
         updates.frequency_time = null;
       } else {
         // Store as "HH:MM" format for duration
-        updates.frequency_time = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+        updates.frequency_time = `${hoursNum.toString().padStart(2, "0")}:${minutesNum.toString().padStart(2, "0")}`;
       }
     }
 

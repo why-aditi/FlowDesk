@@ -90,6 +90,9 @@ export function TeamsClient() {
               .eq("team_id", team.id),
           ]);
 
+          if (memberRes.error) throw memberRes.error;
+          if (knowledgeRes.error) throw knowledgeRes.error;
+
           return {
             ...team,
             member_count: memberRes.count ?? 0,

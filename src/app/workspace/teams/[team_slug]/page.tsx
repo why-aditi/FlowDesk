@@ -1,10 +1,12 @@
 import { createServerClient } from "@/lib/supabase-server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { KnowledgeHubClient } from "./KnowledgeHubClient";
 
-async function getTeamData(slug: string, userId: string) {
-  const supabase = await createServerClient();
-
+async function getTeamData(
+  slug: string,
+  userId: string,
+  supabase: Awaited<ReturnType<typeof createServerClient>>
+) {
   // Fetch team
   const { data: team, error: teamError } = await supabase
     .from("teams")
@@ -12,7 +14,14 @@ async function getTeamData(slug: string, userId: string) {
     .eq("slug", slug)
     .single();
 
-  if (teamError || !team) {
+  if (teamError) {
+    if (teamError.code === "PGRST116" || !team) {
+      return null;
+    }
+    throw teamError;
+  }
+
+  if (!team) {
     return null;
   }
 
@@ -109,10 +118,10 @@ export default async function TeamDetailPage({
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return notFound();
+    redirect("/sign-in");
   }
 
-  const data = await getTeamData(team_slug, user.id);
+  const data = await getTeamData(team_slug, user.id, supabase);
 
   if (!data) {
     return notFound();

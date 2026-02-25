@@ -1,13 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Loader2Icon } from "lucide-react";
 import { createBrowserClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { FileUpload } from "./FileUpload";
 import { ResearchOutline } from "./ResearchOutline";
 
@@ -45,13 +44,20 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
   const [outline, setOutline] = useState<ResearchOutlineData | null>(null);
   const [isDrafting, setIsDrafting] = useState<number | null>(null);
 
+  // Keep a ref always in sync with the latest outline to avoid stale closures
+  const latestOutlineRef = useRef<ResearchOutlineData | null>(null);
+  useEffect(() => {
+    latestOutlineRef.current = outline;
+  }, [outline]);
+
   async function handleResearch() {
     if (!topic.trim() && !pdfText.trim()) {
       toast.error("Please enter a topic or upload a PDF");
       return;
     }
 
-    setOutline(null); // Clear previous outline
+    setOutline(null);    // Clear previous outline
+    setIsDrafting(null); // Reset any in-flight draft status
 
     startTransition(async () => {
       try {
@@ -70,7 +76,7 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
         const data = await response.json();
 
         if (!response.ok) {
-          toast.error("Try again");
+          toast.error(data.error || data.message || "Research failed. Try again.");
           return;
         }
 
@@ -103,15 +109,18 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
         setPdfText("");
         toast.success("Research outline generated!");
       } catch (err) {
-        toast.error("Try again");
+        console.error("[ResearchClient] handleResearch error:", err);
+        toast.error(err instanceof Error ? err.message : "An unexpected error occurred. Try again.");
       }
     });
   }
 
   async function handleDraftParagraph(sectionIndex: number) {
-    if (!outline || !outline.sections[sectionIndex]) return;
+    // Read the freshest outline via ref to avoid stale closure issues
+    const currentOutline = latestOutlineRef.current;
+    if (!currentOutline || !currentOutline.sections[sectionIndex]) return;
 
-    const section = outline.sections[sectionIndex];
+    const section = currentOutline.sections[sectionIndex];
     setIsDrafting(sectionIndex);
 
     try {
@@ -130,22 +139,26 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error("Failed to generate paragraph");
+        toast.error(data.error || data.message || "Failed to generate paragraph");
         return;
       }
 
-      // Update the outline with the new draft paragraph
-      if (data.paragraph && outline) {
-        const newSections = [...outline.sections];
-        newSections[sectionIndex] = {
-          ...section,
-          draft_paragraph: data.paragraph,
-        };
-        setOutline({ ...outline, sections: newSections });
+      // Use functional updater to merge with the freshest outline, avoiding stale state
+      if (data.paragraph) {
+        setOutline((prev) => {
+          if (!prev || !prev.sections[sectionIndex]) return prev;
+          const newSections = [...prev.sections];
+          newSections[sectionIndex] = {
+            ...prev.sections[sectionIndex],
+            draft_paragraph: data.paragraph,
+          };
+          return { ...prev, sections: newSections };
+        });
         toast.success("Paragraph generated!");
       }
     } catch (err) {
-      toast.error("Failed to generate paragraph");
+      console.error("[ResearchClient] handleDraftParagraph error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to generate paragraph");
     } finally {
       setIsDrafting(null);
     }

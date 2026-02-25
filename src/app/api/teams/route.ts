@@ -51,10 +51,9 @@ export async function POST(request: Request) {
       .from("teams")
       .select("id")
       .eq("slug", slug)
-      .single();
+      .maybeSingle();
 
-    if (slugError && slugError.code !== "PGRST116") {
-      // PGRST116 = "no rows found" — that's the expected success case
+    if (slugError) {
       return NextResponse.json(
         { error: `Failed to check team name: ${slugError.message}` },
         { status: 500 }
