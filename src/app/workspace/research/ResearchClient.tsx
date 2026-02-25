@@ -319,16 +319,19 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
         }}
       >
         <DialogContent className="max-w-6xl max-h-[85vh] flex flex-col p-0">
+          <DialogTitle className="sr-only">
+            {selectedNote?.title || "Research Outline"}
+          </DialogTitle>
           <div className="sticky top-0 z-10 bg-background border-b px-6 py-4 flex-shrink-0">
             <div className="flex items-start justify-between gap-4">
               <DialogHeader className="flex-1">
+                <h2 className="text-lg font-semibold">
+                  {selectedNote?.title || "Research Outline"}
+                </h2>
                 {selectedNote && (
-                  <>
-                    <DialogTitle>{selectedNote.title || "Research Outline"}</DialogTitle>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(selectedNote.created_at).toLocaleString()}
-                    </p>
-                  </>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(selectedNote.created_at).toLocaleString()}
+                  </p>
                 )}
               </DialogHeader>
               <Button

@@ -249,13 +249,13 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
       >
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
+            <DialogTitle>
+              {selectedNote?.summary.slice(0, 60) || "Inbox Note"}
+            </DialogTitle>
             {selectedNote && (
-              <>
-                <DialogTitle>{selectedNote.summary.slice(0, 60) || "Inbox Note"}</DialogTitle>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(selectedNote.created_at).toLocaleString()}
-                </p>
-              </>
+              <p className="text-xs text-muted-foreground">
+                {new Date(selectedNote.created_at).toLocaleString()}
+              </p>
             )}
           </DialogHeader>
           {selectedNote && (
