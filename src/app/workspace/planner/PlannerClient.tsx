@@ -305,7 +305,7 @@ export function PlannerClient() {
     }
   };
 
-  const handleToggleDone = async (slot: PlannerSlot, hour: Date) => {
+  const handleToggleDone = async (slot: PlannerSlot) => {
     try {
       const supabase = createBrowserClient();
       const {
@@ -361,17 +361,17 @@ export function PlannerClient() {
   }
 
   return (
-    <div className="p-4 sm:p-6 h-full flex flex-col gap-4">
+    <div className="p-3 sm:p-4 md:p-6 h-full flex flex-col gap-4">
       <div>
-        <h1 className="text-xl sm:text-2xl font-semibold">Hour Planner</h1>
-        <p className="mt-2 text-sm sm:text-base text-muted-foreground">
+        <h1 className="text-lg sm:text-xl md:text-2xl font-semibold">Hour Planner</h1>
+        <p className="mt-1 sm:mt-2 text-xs sm:text-sm md:text-base text-muted-foreground">
           Plan your next 8 hours. Assign tasks and track your progress.
         </p>
       </div>
 
-      <div className="flex-1 flex gap-6 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 overflow-hidden">
         {/* Left side - Time blocks */}
-        <div className="flex-1 overflow-y-auto min-w-0">
+        <div className="flex-1 overflow-y-auto min-w-0 order-1 lg:order-1">
           <div className="space-y-2">
             {hourSlots.map((hourSlot, index) => {
               const isPast = hourSlot.hour < new Date();
@@ -385,23 +385,23 @@ export function PlannerClient() {
                 <div
                   key={index}
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg border bg-card",
+                    "flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border bg-card",
                     isPast && "opacity-60",
                     isCurrentHour && "ring-2 ring-primary"
                   )}
                 >
-                  <div className="flex-shrink-0 w-20">
+                  <div className="flex-shrink-0 w-full sm:w-20">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">
+                      <p className="font-medium text-xs sm:text-sm">
                         {formatHour(hourSlot.hour)}
                       </p>
                       {isCurrentHour && (
-                        <Badge variant="default" className="text-xs">
+                        <Badge variant="default" className="text-xs px-1.5 py-0.5">
                           Now
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-0.5 sm:mt-1">
                       {hourSlot.hour.toLocaleDateString("en-US", {
                         weekday: "short",
                         month: "short",
@@ -410,45 +410,47 @@ export function PlannerClient() {
                     </p>
                   </div>
 
-                  <div className="flex-1 flex items-center gap-3 min-w-0">
+                  <div className="flex-1 flex items-center gap-2 sm:gap-3 min-w-0 w-full sm:w-auto">
                     {hourSlot.slot ? (
                       <>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
+                          <p className="text-xs sm:text-sm font-medium truncate">
                             {hourSlot.slot.task_title}
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleDone(hourSlot.slot!, hourSlot.hour)}
-                          className={cn(
-                            "flex items-center justify-center h-8 w-8 rounded-md border-2 transition-all",
-                            hourSlot.slot.is_done
-                              ? "bg-primary border-primary text-primary-foreground"
-                              : "border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/50"
-                          )}
-                          aria-label={hourSlot.slot.is_done ? "Mark as not done" : "Mark as done"}
-                        >
-                          {hourSlot.slot.is_done ? (
-                            <CheckCircle2 className="h-5 w-5" />
-                          ) : (
-                            <Circle className="h-5 w-5" />
-                          )}
-                        </button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 shrink-0"
-                          onClick={() => handleRemoveTask(hourSlot.slot!)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleDone(hourSlot.slot!)}
+                            className={cn(
+                              "flex items-center justify-center h-7 w-7 sm:h-8 sm:w-8 rounded-md border-2 transition-all",
+                              hourSlot.slot.is_done
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : "border-muted-foreground/30 hover:border-primary/50 hover:bg-muted/50"
+                            )}
+                            aria-label={hourSlot.slot.is_done ? "Mark as not done" : "Mark as done"}
+                          >
+                            {hourSlot.slot.is_done ? (
+                              <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
+                            ) : (
+                              <Circle className="h-4 w-4 sm:h-5 sm:w-5" />
+                            )}
+                          </button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 sm:h-8 sm:w-8 shrink-0"
+                            onClick={() => handleRemoveTask(hourSlot.slot!)}
+                          >
+                            <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </Button>
+                        </div>
                       </>
                     ) : (
                       <>
                         <div className="flex-1 min-w-0">
                           {unallocatedTasks.length === 0 ? (
-                            <div className="text-sm text-muted-foreground py-2 px-3">
+                            <div className="text-xs sm:text-sm text-muted-foreground py-1.5 sm:py-2 px-2 sm:px-3">
                               No unallocated tasks
                             </div>
                           ) : (
@@ -459,7 +461,7 @@ export function PlannerClient() {
                                 }
                               }}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger className="text-xs sm:text-sm h-8 sm:h-10">
                                 <SelectValue placeholder="Select a task..." />
                               </SelectTrigger>
                               <SelectContent>
@@ -482,23 +484,23 @@ export function PlannerClient() {
         </div>
 
         {/* Right side - Completion statistics */}
-        <div className="w-80 shrink-0 flex flex-col">
+        <div className="w-full lg:w-80 shrink-0 flex flex-col order-2 lg:order-2">
           <Card className="sticky top-0">
-            <CardHeader>
+            <CardHeader className="pb-3 sm:pb-6">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <CardTitle className="text-lg">Your Progress</CardTitle>
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <CardTitle className="text-base sm:text-lg">Your Progress</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-4 sm:space-y-6">
 
               {/* Overall Progress Bar */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Last 30 days</span>
-                  <span className="font-bold text-lg">{completionStats.percentage}%</span>
+                  <span className="font-bold text-base sm:text-lg">{completionStats.percentage}%</span>
                 </div>
-                <Progress value={completionStats.percentage} className="h-4" />
+                <Progress value={completionStats.percentage} className="h-3 sm:h-4" />
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{completionStats.completed} completed</span>
                   <span>{completionStats.total} total</span>
@@ -507,10 +509,10 @@ export function PlannerClient() {
 
               {/* Pie Chart Visualization */}
               {completionStats.total > 0 && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-medium">Task Distribution</h3>
-                  <div className="relative w-48 h-48 mx-auto">
-                    <svg viewBox="0 0 100 100" className="transform -rotate-90">
+                <div className="space-y-2 sm:space-y-3">
+                  <h3 className="text-xs sm:text-sm font-medium">Task Distribution</h3>
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 mx-auto">
+                    <svg viewBox="0 0 100 100" className="transform -rotate-90 w-full h-full">
                       <circle
                         cx="50"
                         cy="50"
@@ -533,7 +535,7 @@ export function PlannerClient() {
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
-                        <p className="text-2xl font-bold">{completionStats.percentage}%</p>
+                        <p className="text-lg sm:text-xl md:text-2xl font-bold">{completionStats.percentage}%</p>
                         <p className="text-xs text-muted-foreground">Complete</p>
                       </div>
                     </div>
@@ -542,16 +544,16 @@ export function PlannerClient() {
               )}
 
               {/* Stats Summary */}
-              <div className="space-y-3 pt-4 border-t">
-                <div className="flex items-center justify-between text-sm">
+              <div className="space-y-2 sm:space-y-3 pt-3 sm:pt-4 border-t">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Completed</span>
-                  <span className="font-semibold text-green-600 dark:text-green-400 text-base">
+                  <span className="font-semibold text-green-600 dark:text-green-400 text-sm sm:text-base">
                     {completionStats.completed}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
                   <span className="text-muted-foreground">Pending</span>
-                  <span className="font-semibold text-orange-600 dark:text-orange-400 text-base">
+                  <span className="font-semibold text-orange-600 dark:text-orange-400 text-sm sm:text-base">
                     {completionStats.total - completionStats.completed}
                   </span>
                 </div>

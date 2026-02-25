@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DashboardClient } from "./DashboardClient";
+import { PlannerProgressMobile } from "./PlannerProgressMobile";
 
 function getFirstName(fullName: string | undefined, email: string): string {
   if (fullName?.trim()) {
@@ -91,26 +92,29 @@ export default async function WorkspacePage() {
         </CardHeader>
       </Card>
 
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-2 sm:gap-4 grid-cols-3">
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="text-xs sm:text-sm">Notes saved</CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">{notesCount}</CardTitle>
+          <CardHeader className="pb-2 p-3 sm:p-6">
+            <CardDescription className="text-xs sm:text-sm truncate">Notes saved</CardDescription>
+            <CardTitle className="text-xl sm:text-2xl md:text-3xl">{notesCount}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="text-xs sm:text-sm">Tasks active</CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">{tasksCount}</CardTitle>
+          <CardHeader className="pb-2 p-3 sm:p-6">
+            <CardDescription className="text-xs sm:text-sm truncate">Tasks active</CardDescription>
+            <CardTitle className="text-xl sm:text-2xl md:text-3xl">{tasksCount}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription className="text-xs sm:text-sm">Teams joined</CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl">{teamsCount}</CardTitle>
+          <CardHeader className="pb-2 p-3 sm:p-6">
+            <CardDescription className="text-xs sm:text-sm truncate">Teams joined</CardDescription>
+            <CardTitle className="text-xl sm:text-2xl md:text-3xl">{teamsCount}</CardTitle>
           </CardHeader>
         </Card>
       </div>
+
+      {/* Mobile Planner Progress - shown only on mobile, right after stats */}
+      <PlannerProgressMobile />
 
       <DashboardClient initialTasks={tasks} />
 
