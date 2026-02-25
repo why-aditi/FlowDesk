@@ -10,6 +10,7 @@ import { createBrowserClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MeetingSummary } from "./MeetingSummary";
+import { AddToTaskDialog } from "@/components/AddToTaskDialog";
 
 interface MeetingNote {
   id: string;
@@ -43,6 +44,8 @@ export function MeetingsClient({ initialHistory }: MeetingsClientProps) {
   const [isPending, startTransition] = useTransition();
   const [summary, setSummary] = useState<MeetingSummaryData | null>(null);
   const [selectedNote, setSelectedNote] = useState<MeetingNote | null>(null);
+  const [showAddToTaskDialog, setShowAddToTaskDialog] = useState(false);
+  const [meetingTitle, setMeetingTitle] = useState("");
 
   function handleSelectNote(note: MeetingNote) {
     setSelectedNote(note);
@@ -111,6 +114,10 @@ export function MeetingsClient({ initialHistory }: MeetingsClientProps) {
         // Set summary result
         if (data.summary) {
           setSummary(data.summary as MeetingSummaryData);
+          // Show dialog to add to tasks
+          const meetingTitleText = title.trim() || "Meeting Summary";
+          setMeetingTitle(meetingTitleText);
+          setShowAddToTaskDialog(true);
         }
 
         // Refresh history from Supabase
@@ -240,6 +247,13 @@ export function MeetingsClient({ initialHistory }: MeetingsClientProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add to Task Dialog */}
+      <AddToTaskDialog
+        open={showAddToTaskDialog}
+        onOpenChange={setShowAddToTaskDialog}
+        defaultTitle={meetingTitle}
+      />
     </div>
   );
 }

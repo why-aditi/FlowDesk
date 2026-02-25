@@ -40,10 +40,43 @@ export default function LoginPage() {
 
   async function onSubmit(values: LoginForm) {
     const supabase = createBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    let { error } = await supabase.auth.signInWithPassword({
       email: values.email,
       password: values.password,
     });
+
+    // Handle email not confirmed error by auto-confirming
+    if (error && (error.message.includes("Email not confirmed") || error.message.includes("email_not_confirmed"))) {
+      try {
+        const confirmRes = await fetch("/api/auth/auto-confirm", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: values.email }),
+          credentials: "include",
+        });
+        
+        if (confirmRes.ok) {
+          // Retry sign in after confirmation
+          const retryResult = await supabase.auth.signInWithPassword({
+            email: values.email,
+            password: values.password,
+          });
+          error = retryResult.error;
+        } else {
+          setError("root", {
+            message: "Email confirmation is required. Please check your email or contact support.",
+          });
+          return;
+        }
+      } catch (confirmErr) {
+        setError("root", {
+          message: "Email confirmation is required. Please check your email or contact support.",
+        });
+        return;
+      }
+    }
 
     if (error) {
       setError("root", {

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TriageCard } from "./TriageCard";
 import { AILoadingState } from "./AILoadingState";
+import { AddToTaskDialog } from "@/components/AddToTaskDialog";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
     actionItems?: string[];
   } | null>(null);
   const [selectedNote, setSelectedNote] = useState<InboxNote | null>(null);
+  const [showAddToTaskDialog, setShowAddToTaskDialog] = useState(false);
 
   async function handleTriage() {
     if (!message.trim()) {
@@ -83,6 +85,8 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
         // Set triage result to display in TriageCard
         if (data.triage) {
           setTriageResult(data.triage);
+          // Show dialog to add to tasks
+          setShowAddToTaskDialog(true);
         }
 
         // Refresh history from Supabase
@@ -259,6 +263,15 @@ export function InboxClient({ initialHistory }: InboxClientProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Add to Task Dialog */}
+      {triageResult && (
+        <AddToTaskDialog
+          open={showAddToTaskDialog}
+          onOpenChange={setShowAddToTaskDialog}
+          defaultTitle={triageResult.summary}
+        />
+      )}
     </>
   );
 }

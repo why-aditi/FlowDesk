@@ -81,6 +81,38 @@ export default function SignupPage() {
       return;
     }
 
+    // Auto-confirm the user's email if no session was created
+    if (!data.session && data.user) {
+      try {
+        const confirmRes = await fetch("/api/auth/auto-confirm", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId: data.user.id }),
+          credentials: "include",
+        });
+        if (confirmRes.ok) {
+          // Retry sign in after confirmation
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email: values.email,
+            password: values.password,
+          });
+          
+          if (signInError || !signInData.session) {
+            setError("root", { message: "Account created but sign in failed. Please try logging in." });
+            return;
+          }
+          // Update data.session for the sync check below
+          data.session = signInData.session;
+        }
+      } catch (err) {
+        console.error("Auto-confirm error:", err);
+        setError("root", { message: "Account created but confirmation failed. Please try logging in." });
+        return;
+      }
+    }
+
     if (data.session) {
       const syncRes = await fetch("/api/users/sync", {
         method: "POST",
@@ -90,9 +122,11 @@ export default function SignupPage() {
         setError("root", { message: "Something went wrong. Try logging in." });
         return;
       }
+      router.push("/workspace");
+    } else {
+      // If still no session, redirect to login
+      router.push("/login");
     }
-    // With email confirmation enabled, no session yet; still redirect per spec
-    router.push("/workspace");
   }
 
   return (

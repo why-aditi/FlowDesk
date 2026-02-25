@@ -3,12 +3,19 @@
 import { useState, useTransition, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2Icon } from "lucide-react";
+import { Loader2Icon, X } from "lucide-react";
 import { createBrowserClient } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { FileUpload } from "./FileUpload";
 import { ResearchOutline } from "./ResearchOutline";
+import { AddToTaskDialog } from "@/components/AddToTaskDialog";
 
 interface ResearchNote {
   id: string;
@@ -43,6 +50,10 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
   const [isPending, startTransition] = useTransition();
   const [outline, setOutline] = useState<ResearchOutlineData | null>(null);
   const [isDrafting, setIsDrafting] = useState<number | null>(null);
+  const [showAddToTaskDialog, setShowAddToTaskDialog] = useState(false);
+  const [researchTopic, setResearchTopic] = useState("");
+  const [selectedNote, setSelectedNote] = useState<ResearchNote | null>(null);
+  const [selectedOutline, setSelectedOutline] = useState<ResearchOutlineData | null>(null);
 
   // Keep a ref always in sync with the latest outline to avoid stale closures
   const latestOutlineRef = useRef<ResearchOutlineData | null>(null);
@@ -83,6 +94,10 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
         // Set outline result
         if (data.outline) {
           setOutline(data.outline);
+          // Show dialog to add to tasks
+          const topicText = topic.trim() || "Research from PDF";
+          setResearchTopic(topicText);
+          setShowAddToTaskDialog(true);
         }
 
         // Refresh history from Supabase
@@ -113,6 +128,30 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
         toast.error(err instanceof Error ? err.message : "An unexpected error occurred. Try again.");
       }
     });
+  }
+
+  function handleSelectNote(note: ResearchNote) {
+    setSelectedNote(note);
+    // Parse metadata to extract outline
+    if (note.metadata && typeof note.metadata === "object") {
+      const metadata = note.metadata as Record<string, unknown>;
+      // The metadata contains the full outline structure
+      if (metadata.thesis || Array.isArray(metadata.sections)) {
+        const outlineData: ResearchOutlineData = {
+          thesis: (metadata.thesis as string) || "",
+          sections: Array.isArray(metadata.sections)
+            ? (metadata.sections as Section[])
+            : [],
+          important_terms: Array.isArray(metadata.important_terms)
+            ? (metadata.important_terms as string[])
+            : [],
+          draft_intro: typeof metadata.draft_intro === "string"
+            ? metadata.draft_intro
+            : undefined,
+        };
+        setSelectedOutline(outlineData);
+      }
+    }
   }
 
   async function handleDraftParagraph(sectionIndex: number) {
@@ -232,7 +271,16 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
                 {history.map((note) => (
                   <li
                     key={note.id}
-                    className="rounded-md border border-border p-3 text-sm space-y-2"
+                    onClick={() => handleSelectNote(note)}
+                    className="rounded-md border border-border p-3 text-sm space-y-2 cursor-pointer transition-colors hover:bg-muted/60 hover:border-muted-foreground/30 active:bg-muted"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleSelectNote(note);
+                      }
+                    }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="font-medium text-foreground line-clamp-2 flex-1 text-xs sm:text-sm">
@@ -252,6 +300,64 @@ export function ResearchClient({ initialHistory }: ResearchClientProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add to Task Dialog */}
+      <AddToTaskDialog
+        open={showAddToTaskDialog}
+        onOpenChange={setShowAddToTaskDialog}
+        defaultTitle={`Research: ${researchTopic}`}
+      />
+
+      {/* Research History Modal */}
+      <Dialog
+        open={!!selectedNote}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedNote(null);
+            setSelectedOutline(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-6xl max-h-[85vh] flex flex-col p-0">
+          <div className="sticky top-0 z-10 bg-background border-b px-6 py-4 flex-shrink-0">
+            <div className="flex items-start justify-between gap-4">
+              <DialogHeader className="flex-1">
+                {selectedNote && (
+                  <>
+                    <DialogTitle>{selectedNote.title || "Research Outline"}</DialogTitle>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(selectedNote.created_at).toLocaleString()}
+                    </p>
+                  </>
+                )}
+              </DialogHeader>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0"
+                onClick={() => {
+                  setSelectedNote(null);
+                  setSelectedOutline(null);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {selectedOutline && (
+              <ResearchOutline
+                outline={selectedOutline}
+                onDraftParagraph={async () => {
+                  // Disable drafting from history view
+                  toast.info("Drafting is only available for new research");
+                }}
+                isDrafting={null}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase-server";
 
 const ALLOWED_TYPES = new Set([
-  "signup",
   "magiclink",
   "recovery",
   "invite",
@@ -19,7 +18,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  const type = rawType as "signup" | "magiclink" | "recovery" | "invite" | "email_change";
+  const type = rawType as "magiclink" | "recovery" | "invite" | "email_change";
 
   const supabase = await createServerClient();
   const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });

@@ -4,6 +4,7 @@ export type WorkspaceTab =
   | "home"
   | "inbox"
   | "research"
+  | "planner"
   | "meetings"
   | "tasks"
   | "teams"
