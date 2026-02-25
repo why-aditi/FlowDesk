@@ -53,15 +53,15 @@ function buildConfirmUrl(
   return url.toString();
 }
 
-function resolveSubjectAndHtml(payload: HookPayload, confirmUrl: string) {
+function resolveSubjectAndHtml(
+  payload: HookPayload,
+  confirmUrl: string
+): { subject: string; html: string } {
   const { email_action_type } = payload.email_data;
   const name = payload.user.user_metadata?.full_name ?? "";
   const email = payload.user.email;
 
   switch (email_action_type) {
-    case "signup":
-      // Email confirmation disabled - skip sending confirmation email
-      return null;
     case "magiclink":
       return {
         subject: "Your FlowDesk sign-in link",
