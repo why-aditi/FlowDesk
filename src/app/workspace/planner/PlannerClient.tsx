@@ -138,7 +138,7 @@ function generateKeysForRange(start: Date, end: Date, scale: TimeScale): { keys:
     // This is a simplification: we'll just fetch all hourly slots in the month
     while (current <= end) {
       keys.push(getPeriodKey(current, "hour"));
-      current.setHours(current.getHours() + 24); // just grab one per day for the daily resolution if needed, but actually we need to query differently for large ranges
+      current.setDate(current.getDate() + 1); // move date safely
     }
     // Actually, for month/year, querying hundreds of hourly keys via `in` might be large.
     // But for this demo we'll allow it or rely on range queries if we could.
