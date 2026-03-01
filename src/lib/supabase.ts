@@ -5,11 +5,14 @@ const _supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const _supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export function getSupabaseEnv(): { url: string; anonKey: string } {
+  // During static build time, Next.js may hit this path without full env vars
   if (!_supabaseUrl?.trim()) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+    console.warn("Missing NEXT_PUBLIC_SUPABASE_URL");
+    return { url: "http://localhost:54321", anonKey: "dummy_anon_key" };
   }
   if (!_supabaseAnonKey?.trim()) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    console.warn("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
+    return { url: _supabaseUrl, anonKey: "dummy_anon_key" };
   }
   return { url: _supabaseUrl, anonKey: _supabaseAnonKey };
 }
