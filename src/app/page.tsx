@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createServerClient } from "@/lib/supabase-server";
 import {
   Card,
   CardContent,
@@ -16,7 +18,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    redirect("/workspace");
+  }
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b border-border">
