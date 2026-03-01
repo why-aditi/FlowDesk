@@ -6,7 +6,13 @@ const _supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export function getSupabaseEnv(): { url: string; anonKey: string } {
   // During static build time, Next.js may hit this path without full env vars
-  const isRuntime = process.env.NODE_ENV === "production";
+  const isBuildTime = typeof process !== "undefined" && (
+    process.env.npm_lifecycle_event === "build" ||
+    process.env.NEXT_IS_EXPORT_WORKER === "true" ||
+    process.env.NEXT_PHASE === "phase-production-build"
+  );
+  const isRuntime = process.env.NODE_ENV === "production" && !isBuildTime;
+
   if (!_supabaseUrl?.trim()) {
     if (isRuntime) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
     console.warn("Missing NEXT_PUBLIC_SUPABASE_URL");
