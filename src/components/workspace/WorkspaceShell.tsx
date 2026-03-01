@@ -18,7 +18,7 @@ export function WorkspaceShell({ user, children }: WorkspaceShellProps) {
   }, [user, setUser]);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
       <main className="flex-1 overflow-auto lg:ml-0">{children}</main>
     </div>
