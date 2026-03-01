@@ -65,12 +65,10 @@ function formatTime(hour: number) {
 function getPeriodKey(date: Date, scale: "hour" | "day" | TimeScale): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hour = String(date.getHours()).padStart(2, "0");
 
   if (scale === "hour" || scale === "day") {
     // For day views, we still store slots at the hour resolution
-    return `${year}-${month}-${day}T${hour}:00:00`;
+    return date.toISOString();
   } else if (scale === "week") {
     // We store weekly tasks by the week number
     return `${year}-W${String(getISOWeekNumber(date)).padStart(2, "0")}`;
@@ -79,7 +77,7 @@ function getPeriodKey(date: Date, scale: "hour" | "day" | TimeScale): string {
   } else if (scale === "year") {
     return `${year}`;
   }
-  return `${year}-${month}-${day}T${hour}:00:00`;
+  return date.toISOString();
 }
 
 function getVisibleRange(currentDate: Date, scale: TimeScale) {
@@ -140,7 +138,7 @@ function generateKeysForRange(start: Date, end: Date, scale: TimeScale): { keys:
     // This is a simplification: we'll just fetch all hourly slots in the month
     while (current <= end) {
       keys.push(getPeriodKey(current, "hour"));
-      current.setHours(current.getHours() + 24); // just grab one per day for the daily resolution if needed, but actually we need to query differently for large ranges
+      current.setDate(current.getDate() + 1); // move date safely
     }
     // Actually, for month/year, querying hundreds of hourly keys via `in` might be large.
     // But for this demo we'll allow it or rely on range queries if we could.
@@ -152,6 +150,173 @@ function generateKeysForRange(start: Date, end: Date, scale: TimeScale): { keys:
 function isSameDay(d1: Date, d2: Date) {
   return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate();
 }
+
+interface SlotCardProps {
+  slot: PlannerSlot | undefined;
+  onAssign: (taskId: string) => void;
+  onToggleDone: (slot: PlannerSlot, e: React.MouseEvent) => void;
+  onRemove: (slot: PlannerSlot, e: React.MouseEvent) => void;
+  unallocatedTasks: Task[];
+}
+
+const SlotCard = ({ slot, onAssign, onToggleDone, onRemove, unallocatedTasks }: SlotCardProps) => {
+  const [open, setOpen] = useState(false);
+
+  if (slot) {
+    return (
+      <div className={cn(
+        "h-full w-full p-1.5 sm:p-2 rounded-md border text-xs sm:text-sm flex flex-col transition-all cursor-pointer",
+        slot.is_done
+          ? "bg-muted/50 border-muted opacity-60 hover:opacity-100"
+          : "bg-primary/10 border-primary/20 hover:bg-primary/15 shadow-sm"
+      )}>
+        <div className="font-medium truncate mb-1 pr-6 flex-1 text-foreground">
+          {slot.task_title}
+        </div>
+        <div className="flex items-center gap-1.5 mt-auto">
+          <button
+            onClick={(e) => onToggleDone(slot, e)}
+            className={cn(
+              "h-5 w-5 rounded shadow-sm border flex items-center justify-center transition-colors",
+              slot.is_done ? "bg-primary border-primary text-primary-foreground" : "bg-background hover:border-primary"
+            )}
+          >
+            {slot.is_done && <CheckCircle2 className="h-3 w-3" />}
+          </button>
+          <button
+            onClick={(e) => onRemove(slot, e)}
+            className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <div className="h-full w-full p-2 opacity-0 group-hover:opacity-100 transition-all bg-transparent cursor-pointer flex items-center justify-center border-2 border-transparent group-hover:border-dashed group-hover:border-muted-foreground/30">
+          <span className="text-xs text-muted-foreground font-medium">+ Task</span>
+        </div>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Assign Task</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          {unallocatedTasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pending tasks.</p>
+          ) : (
+            <Select onValueChange={(val) => {
+              onAssign(val);
+              setOpen(false);
+            }}>
+              <SelectTrigger className="text-sm h-9">
+                <SelectValue placeholder="Select a task..." />
+              </SelectTrigger>
+              <SelectContent>
+                {unallocatedTasks.map(t => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+interface MonthDayCellProps {
+  date: Date;
+  i: number;
+  daySlots: PlannerSlot[];
+  currentDate: Date;
+  unallocatedTasks: Task[];
+  onToggleDone: (slot: PlannerSlot, e: React.MouseEvent) => void;
+  onAssignTask: (date: Date, scale: "hour" | TimeScale, taskId: string) => void;
+}
+
+const MonthDayCell = ({ date, i, daySlots, currentDate, unallocatedTasks, onToggleDone, onAssignTask }: MonthDayCellProps) => {
+  const [open, setOpen] = useState(false);
+  const isToday = isSameDay(date, new Date());
+  const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <div className={cn(
+          "border-r border-b min-h-[100px] p-1 sm:p-2 transition-colors hover:bg-muted/5 group cursor-pointer relative",
+          !isCurrentMonth && "bg-muted/20 text-muted-foreground",
+          (i % 7 === 6) && "border-r-0"
+        )}>
+          <div className="flex justify-between items-start mb-1">
+            <span className={cn(
+              "h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center rounded-full text-xs sm:text-sm",
+              isToday ? "bg-primary text-primary-foreground font-bold" : (isCurrentMonth ? "font-medium" : "font-normal")
+            )}>
+              {date.getDate()}
+            </span>
+          </div>
+
+          <div className="space-y-1 mt-1 sm:mt-2 max-h-[80px] sm:max-h-[120px] overflow-y-auto no-scrollbar">
+            {daySlots.slice(0, 4).map((slot, idx) => (
+              <div
+                key={idx}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleDone(slot, e as any);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                className={cn(
+                  "text-[10px] sm:text-xs px-1.5 py-0.5 rounded truncate cursor-pointer transition-colors relative z-10",
+                  slot.is_done ? "bg-muted text-muted-foreground line-through" : "bg-primary/20 text-foreground hover:bg-primary/30"
+                )}
+              >
+                <span className="opacity-60 mr-1">{slot.period_key.substring(11, 16)}</span>
+                {slot.task_title}
+              </div>
+            ))}
+            {daySlots.length > 4 && (
+              <div className="text-[10px] text-muted-foreground font-medium px-1">
+                +{daySlots.length - 4} more
+              </div>
+            )}
+          </div>
+          {/* Hover indicator for adding task */}
+          <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+            <span className="text-[10px] font-medium text-muted-foreground">+ Add Task</span>
+          </div>
+        </div>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Assign to {date.toLocaleDateString()}</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          {unallocatedTasks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pending tasks.</p>
+          ) : (
+            <Select onValueChange={(taskId) => {
+              const target = new Date(date);
+              target.setHours(9, 0, 0, 0);
+              onAssignTask(target, "hour", taskId);
+              setOpen(false);
+            }}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select task..." />
+              </SelectTrigger>
+              <SelectContent>
+                {unallocatedTasks.map(t => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 
 export function PlannerClient() {
@@ -200,16 +365,16 @@ export function PlannerClient() {
       // Also fetch "day" level tasks if we had them, but for this implementation we'll treat Day/Week grids as Hour-level assignments.
 
       // Supabase range query on period_key for simple string comparison (works for ISO strings!)
-      const startStr = getPeriodKey(start, queryScale);
-      const endStr = getPeriodKey(end, queryScale);
+      const isoStart = start.toISOString();
+      const isoEnd = end.toISOString();
 
       const { data: rangeSlots, error } = await supabase
         .from("planner_slots")
         .select("*")
         .eq("user_id", user.id)
         .eq("time_scale", queryScale)
-        .gte("period_key", startStr.substring(0, 10)) // rough filter
-        .lte("period_key", endStr + "Z");
+        .gte("period_key", isoStart)
+        .lte("period_key", isoEnd);
 
       // For completion stats, we get everything in the last 30 days regardless of scale for simplicity (or just current view)
       const thirtyDaysAgo = new Date();
@@ -218,7 +383,7 @@ export function PlannerClient() {
         .from("planner_slots")
         .select("is_done")
         .eq("user_id", user.id)
-        .gte("period_key", getPeriodKey(thirtyDaysAgo, "hour").substring(0, 10));
+        .gte("period_key", thirtyDaysAgo.toISOString());
 
       if (statsData) {
         const total = statsData.length;
@@ -237,13 +402,17 @@ export function PlannerClient() {
 
       // Filter fetchedSlots precisely in memory
       const filteredSlots = fetchedSlots.filter(s => {
-        return s.period_key >= startStr.substring(0, 10) && s.period_key <= endStr + "Z";
+        return s.period_key >= isoStart && s.period_key <= isoEnd;
       });
 
       setSlots(filteredSlots);
 
       const allocated = new Set<string>();
-      fetchedSlots.forEach((s) => s.task_id && allocated.add(s.task_id));
+      fetchedSlots.forEach((s) => {
+        if (s.task_id) {
+          allocated.add(s.task_id);
+        }
+      });
       setAllocatedTaskIds(allocated);
 
       const { data: tasks } = await supabase
@@ -298,9 +467,13 @@ export function PlannerClient() {
         });
         if (error) {
           if ((error as any).code === "42703") { // fallback for legacy schema
-            await supabase.from("planner_slots").insert({
+            const { error: fallbackError } = await supabase.from("planner_slots").insert({
               user_id: user.id, hour: periodKey, task_title: task.title, task_id: task.id, is_done: false,
             } as any);
+            if (fallbackError) {
+              console.error(fallbackError);
+              throw fallbackError;
+            }
           } else throw error;
         }
       }
@@ -361,74 +534,6 @@ export function PlannerClient() {
     );
   };
 
-  const SlotCard = ({ slot, onAssign }: { slot: PlannerSlot | undefined, onAssign: (taskId: string) => void }) => {
-    const [open, setOpen] = useState(false);
-
-    if (slot) {
-      return (
-        <div className={cn(
-          "h-full w-full p-1.5 sm:p-2 rounded-md border text-xs sm:text-sm flex flex-col transition-all cursor-pointer",
-          slot.is_done
-            ? "bg-muted/50 border-muted opacity-60 hover:opacity-100"
-            : "bg-primary/10 border-primary/20 hover:bg-primary/15 shadow-sm"
-        )}>
-          <div className="font-medium truncate mb-1 pr-6 flex-1 text-foreground">
-            {slot.task_title}
-          </div>
-          <div className="flex items-center gap-1.5 mt-auto">
-            <button
-              onClick={(e) => handleToggleDone(slot, e)}
-              className={cn(
-                "h-5 w-5 rounded shadow-sm border flex items-center justify-center transition-colors",
-                slot.is_done ? "bg-primary border-primary text-primary-foreground" : "bg-background hover:border-primary"
-              )}
-            >
-              {slot.is_done && <CheckCircle2 className="h-3 w-3" />}
-            </button>
-            <button
-              onClick={(e) => handleRemoveTask(slot, e)}
-              className="h-5 w-5 flex items-center justify-center text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <div className="h-full w-full p-2 opacity-0 group-hover:opacity-100 transition-all bg-transparent cursor-pointer flex items-center justify-center border-2 border-transparent group-hover:border-dashed group-hover:border-muted-foreground/30">
-            <span className="text-xs text-muted-foreground font-medium">+ Task</span>
-          </div>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Assign Task</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            {unallocatedTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No pending tasks.</p>
-            ) : (
-              <Select onValueChange={(val) => {
-                onAssign(val);
-                setOpen(false);
-              }}>
-                <SelectTrigger className="text-sm h-9">
-                  <SelectValue placeholder="Select a task..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {unallocatedTasks.map(t => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
   const renderDayColumn = (date: Date) => {
     const isToday = isSameDay(date, new Date());
     return (
@@ -443,7 +548,13 @@ export function PlannerClient() {
           return (
             <div key={hour} className="h-16 sm:h-20 border-b relative group">
               <div className="absolute inset-x-1 inset-y-1">
-                <SlotCard slot={slot} onAssign={(taskId) => handleAssignTask(cellDate, "hour", taskId)} />
+                <SlotCard
+                  slot={slot}
+                  onAssign={(taskId) => handleAssignTask(cellDate, "hour", taskId)}
+                  onToggleDone={handleToggleDone}
+                  onRemove={handleRemoveTask}
+                  unallocatedTasks={unallocatedTasks}
+                />
               </div>
             </div>
           );
@@ -515,7 +626,13 @@ export function PlannerClient() {
                   return (
                     <div key={hour} className={cn("h-16 sm:h-20 border-b relative group", isEven && "bg-muted/5")}>
                       <div className="absolute inset-x-[2px] inset-y-[2px]">
-                        <SlotCard slot={slot} onAssign={(taskId) => handleAssignTask(cellDate, "hour", taskId)} />
+                        <SlotCard
+                          slot={slot}
+                          onAssign={(taskId) => handleAssignTask(cellDate, "hour", taskId)}
+                          onToggleDone={handleToggleDone}
+                          onRemove={handleRemoveTask}
+                          unallocatedTasks={unallocatedTasks}
+                        />
                       </div>
                     </div>
                   );
@@ -526,87 +643,6 @@ export function PlannerClient() {
           </div>
         </div>
       </div>
-    );
-  };
-
-  const MonthDayCell = ({ date, i, daySlots }: { date: Date, i: number, daySlots: PlannerSlot[] }) => {
-    const [open, setOpen] = useState(false);
-    const isToday = isSameDay(date, new Date());
-    const isCurrentMonth = date.getMonth() === currentDate.getMonth();
-
-    return (
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <div className={cn(
-            "border-r border-b min-h-[100px] p-1 sm:p-2 transition-colors hover:bg-muted/5 group cursor-pointer relative",
-            !isCurrentMonth && "bg-muted/20 text-muted-foreground",
-            (i % 7 === 6) && "border-r-0"
-          )}>
-            <div className="flex justify-between items-start mb-1">
-              <span className={cn(
-                "h-6 w-6 sm:h-7 sm:w-7 flex items-center justify-center rounded-full text-xs sm:text-sm",
-                isToday ? "bg-primary text-primary-foreground font-bold" : (isCurrentMonth ? "font-medium" : "font-normal")
-              )}>
-                {date.getDate()}
-              </span>
-            </div>
-
-            <div className="space-y-1 mt-1 sm:mt-2 max-h-[80px] sm:max-h-[120px] overflow-y-auto no-scrollbar">
-              {daySlots.slice(0, 4).map((slot, idx) => (
-                <div
-                  key={idx}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleToggleDone(slot, e as any);
-                  }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className={cn(
-                    "text-[10px] sm:text-xs px-1.5 py-0.5 rounded truncate cursor-pointer transition-colors relative z-10",
-                    slot.is_done ? "bg-muted text-muted-foreground line-through" : "bg-primary/20 text-foreground hover:bg-primary/30"
-                  )}
-                >
-                  <span className="opacity-60 mr-1">{slot.period_key.substring(11, 16)}</span>
-                  {slot.task_title}
-                </div>
-              ))}
-              {daySlots.length > 4 && (
-                <div className="text-[10px] text-muted-foreground font-medium px-1">
-                  +{daySlots.length - 4} more
-                </div>
-              )}
-            </div>
-            {/* Hover indicator for adding task */}
-            <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-              <span className="text-[10px] font-medium text-muted-foreground">+ Add Task</span>
-            </div>
-          </div>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Assign to {date.toLocaleDateString()}</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            {unallocatedTasks.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No pending tasks.</p>
-            ) : (
-              <Select onValueChange={(taskId) => {
-                const target = new Date(date);
-                target.setHours(9, 0, 0, 0);
-                handleAssignTask(target, "hour", taskId);
-                setOpen(false);
-              }}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select task..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {unallocatedTasks.map(t => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     );
   };
 
@@ -633,7 +669,18 @@ export function PlannerClient() {
             const startOfDayStr = getPeriodKey(date, "hour").substring(0, 10);
             const daySlots = slots.filter(s => s.period_key.startsWith(startOfDayStr));
 
-            return <MonthDayCell key={i} date={date} i={i} daySlots={daySlots} />;
+            return (
+              <MonthDayCell
+                key={i}
+                date={date}
+                i={i}
+                daySlots={daySlots}
+                currentDate={currentDate}
+                unallocatedTasks={unallocatedTasks}
+                onToggleDone={handleToggleDone}
+                onAssignTask={handleAssignTask}
+              />
+            );
           })}
         </div>
       </div>
